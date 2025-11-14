@@ -899,7 +899,7 @@ class GetRatesController extends Controller
             return false;
         }
 
-        $isSameCountry = $destination['country'] == $filterCountry ?? false;
+        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], json_decode($filterCountry)));
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
         if (!empty($origins)) {
@@ -952,7 +952,13 @@ class GetRatesController extends Controller
 
     public function applyHideDeliveryEstimatesRule($rule)
     {
+            Log::info('++++++++++++++++++++++ applyHideDeliveryEstimatesRule on line 955' . json_encode([
+            $this->connectionSettings
+        ]));
         if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
+              Log::info('+++++++++++------------+++++++++++ quote_settings on line 959' . json_encode([
+            $this->connectionSettings
+        ]));
             $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
             $quoteSettings['delivery_estimate_options'] = 1;
             $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;

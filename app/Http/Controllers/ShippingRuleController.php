@@ -528,7 +528,6 @@ class ShippingRuleController extends Controller
     {
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
-        $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
         // --- Location filters ---
         $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
         $settings = json_decode($shippingRule['filter_settings'], true);
@@ -542,7 +541,7 @@ class ShippingRuleController extends Controller
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
-        $isSameCountry = ($filterCountry !== '' && $destination['country'] == $filterCountry);
+        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
 
@@ -662,7 +661,7 @@ class ShippingRuleController extends Controller
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
-        $isSameCountry = ($filterCountry !== '' && $destination['country'] == $filterCountry);
+        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
 
@@ -803,7 +802,7 @@ class ShippingRuleController extends Controller
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
-        $isSameCountry = ($filterCountry !== '' && $destination['country'] == $filterCountry);
+        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
@@ -921,142 +920,7 @@ class ShippingRuleController extends Controller
 
         $settings = json_decode($shippingRule['filter_settings'], true);
         $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? $settings['is_all_filter_applied'] : '';
-        // override rule
-        // if ($shippingRule['rule_type'] == 6) {
-        //     dd("asdasdf");
-
-        //     $variants = [];
-        //     $totalWeight = 0;
-        //     $totalQuantity = 0;
-        //     $totalPrice = 0;
-        //     $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $isSameLocation = false;
-        //     $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $isSameLocationCheck = false;
-
-        //     // --- Location filters ---
-        //     $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
-        //     $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
-        //     $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
-        //     $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-
-        //     $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
-        //     $isSameCountry = ($filterCountry !== '' && $destination['country'] == $filterCountry);
-        //     $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
-
-        //     // --- Collect variants for this shipment key ---
-        //     if (!empty($allOrigins)) {
-        //         $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
-        //             return $origin['locationId'] == $shipmentKey;
-        //         })->keys()->all() ?? [];
-        //     }
-
-        //     // --- Totals ---
-        //     if (!empty($variants)) {
-        //         foreach ($variants as $variantId) {
-        //             if (isset($items[$variantId])) {
-        //                 $item = $items[$variantId];
-        //                 $qty  = $item['piecesOfLineItem'] ?? 0;
-
-        //                 $totalWeight   += ($item['lineItemWeight'] ?? 0) * $qty;
-        //                 $totalPrice    += ($item['lineItemPrice'] ?? 0) * $qty;
-        //                 $totalQuantity += $qty;
-        //             }
-        //         }
-        //     }
-
-        //     // --------------------
-        //     // Weight filter block
-        //     // --------------------
-        //     if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
-        //         $inWeightRange = isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from']
-        //             && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '');
-
-        //         if ($hasLocationFilter) {
-        //             if ($inWeightRange) {
-        //                 if ($isSameCountry || ($isSameCountry && $isSameState)) {
-        //                     $isFilterWeight = true;           // match + location match
-        //                 } elseif (!$isSameCountry && !$isSameState) {
-        //                     $isFilterWeightCheck = true;      // match + location mismatch
-        //                 }
-        //             }
-        //             // if not in range → leave both flags false (same as your current logic)
-        //         } else {
-        //             // no location filter → keep current behavior
-        //             if ($inWeightRange) {
-        //                 $isFilterWeight = true;
-        //             }
-        //         }
-        //     } else {
-        //         $isFilterWeightCheck = true; // same as your current logic
-        //     }
-
-        //     // -------------------
-        //     // Price filter block
-        //     // -------------------
-        //     if (isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']) {
-        //         $inPriceRange = isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from']
-        //             && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '');
-
-        //         if ($hasLocationFilter) {
-        //             if ($inPriceRange) {
-        //                 if ($isSameCountry || ($isSameCountry && $isSameState)) {
-        //                     $isFilterPrice = true;
-        //                 } elseif (!$isSameCountry && !$isSameState) {
-        //                     $isFilterPriceCheck = true;
-        //                 }
-        //             }
-        //         } else {
-        //             if ($inPriceRange) {
-        //                 $isFilterPrice = true;
-        //             }
-        //         }
-        //     } else {
-        //         $isFilterPriceCheck = true;
-        //     }
-
-        //     // -----------------------
-        //     // Quantity filter block
-        //     // -----------------------
-        //     if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-        //         $inQtyRange = isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from']
-        //             && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '');
-
-        //         if ($hasLocationFilter) {
-        //             if ($inQtyRange) {
-        //                 if ($isSameCountry || ($isSameCountry && $isSameState)) {
-        //                     $isFilterQuantity = true;
-        //                 } elseif (!$isSameCountry && !$isSameState) {
-        //                     $isFilterQuantityCheck = true;
-        //                 }
-        //             }
-        //         } else {
-        //             if ($inQtyRange) {
-        //                 $isFilterQuantity = true;
-        //             }
-        //         }
-        //     } else {
-        //         $isFilterQuantityCheck = true;
-        //     }
-
-        //     $isLocationFilter = $settings['isLocationFilter'];
-        //     if ($isLocationFilter == true && !empty($filterCountry)) {
-        //         if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
-        //             $isSameLocation = true;
-        //         }
-        //     } else {
-        //         $isSameLocationCheck = true;
-        //     }
-
-        //     // --- Final decision (unchanged) ---
-        //     if (
-        //         ($isFilterWeight || $isFilterPrice || $isFilterQuantity || $isSameLocation) ||
-        //         ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck)
-        //     ) {
-        //         return false;
-        //     }
-
-        //     return true;
-        // }
-
+      
         $variants = [];
         $totalWeight = 0;
         $totalQuantity = 0;
@@ -1074,7 +938,7 @@ class ShippingRuleController extends Controller
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
-        $isSameCountry = ($filterCountry !== '' && $destination['country'] == $filterCountry);
+        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
@@ -1171,65 +1035,6 @@ class ShippingRuleController extends Controller
         return true;
     }
 
-
-
-
-    // public function checkIsSurchargeRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination)
-    // {
-    //     $variants = [];
-    //     $totalWeight = 0;
-    //     $totalQuantity = 0;
-    //     $totalPrice = 0;
-    //     $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
-    //     $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = false;
-
-    //     if (!empty($allOrigins)) {
-    //         $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
-    //             return $origin['locationId'] == $shipmentKey;
-    //         })->keys()->all() ?? [];
-    //     }
-
-    //     if (!empty($variants)) {
-    //         foreach ($variants as $variantId) {
-    //             if (isset($items[$variantId])) {
-    //                 $item = $items[$variantId];
-    //                 $totalWeight += $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
-    //                 $totalPrice += $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
-    //                 $totalQuantity += $item['piecesOfLineItem'] ?? 0;
-    //             }
-
-    //         }
-    //     }
-
-
-    //     if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
-    //         if (isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')) {
-    //             $isFilterWeight = true;
-    //         }
-    //     } else {
-    //         $isFilterWeightCheck = true;
-    //     }
-    //     if (isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']) {
-    //         if (isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')) {
-    //             $isFilterPrice = true;
-    //         }
-    //     } else {
-    //         $isFilterPriceCheck = true;
-    //     }
-    //     if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-    //         if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
-    //             $isFilterQuantity = true;
-    //         }
-    //     } else {
-    //         $isFilterQuantityCheck = true;
-    //     }
-
-    //     if (($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)) {
-    //         return false;
-    //     }
-
-    //     return true;
-    // }
 
     public function getCountryStates(Request $request)
     {

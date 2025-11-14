@@ -156,6 +156,9 @@ class ShippingRule extends Model
                         "filter_products" => $shippingRuleData['filter_products'] ?? [],
                         "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -193,6 +196,9 @@ class ShippingRule extends Model
                         "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -205,6 +211,9 @@ class ShippingRule extends Model
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_postal_code" => $shippingRuleData['filter_postal_code'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -216,6 +225,9 @@ class ShippingRule extends Model
                         "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "warehouses" => $shippingRuleData['warehouses'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -298,7 +310,7 @@ class ShippingRule extends Model
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                 case 10:
-                    $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
+                    $shippingRule->filter_name = json_encode($shippingRuleData['filter_country'] ?? []);
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
                         "filter_products" => $shippingRuleData['filter_products'] ?? [],
@@ -307,6 +319,9 @@ class ShippingRule extends Model
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_flat_shipping_rate" => $shippingRuleData['filter_flat_shipping_rate'] ?? '',
                         "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -464,6 +479,9 @@ class ShippingRule extends Model
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
@@ -486,6 +504,9 @@ class ShippingRule extends Model
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
@@ -563,6 +584,9 @@ class ShippingRule extends Model
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
@@ -578,6 +602,9 @@ class ShippingRule extends Model
         $shippingRule['filter_flat_shipping_rate'] = $settings['filter_flat_shipping_rate'] ?? '';
         $shippingRule['isFilterFlatPrice'] = $settings['isFilterFlatPrice'] ?? false;
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
@@ -592,6 +619,9 @@ class ShippingRule extends Model
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
         $shippingRule['filter_postal_code'] = $settings['filter_postal_code'];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
@@ -604,6 +634,9 @@ class ShippingRule extends Model
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
         $shippingRule['warehouses'] = $settings['warehouses'] ?? [];
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
 
         return $shippingRule;
     }
