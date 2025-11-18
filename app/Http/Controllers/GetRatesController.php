@@ -829,7 +829,7 @@ class GetRatesController extends Controller
                     if (($isAllFilterApplied === 1) && ($selectedFilters !== $appliedFilters)) {
                         if ($rule['rule_type'] == 10) {
                             foreach ($this->formatReq['lineItemData']['items'] as $key => $product) {
-                                if ($product['flatRate'] == $givenFlatRate) {
+                                if (isset($product['flatRate']) && $product['flatRate'] == $givenFlatRate) {
                                     unset($this->formatReq['lineItemData']['items'][$key]['flatRate']);
                                     unset($this->formatReq['lineItemData']['items'][$key]['isFreeShipping']);
                                     unset($this->formatReq['lineItemData']['items'][$key]['flatRateUuid']);
