@@ -5183,7 +5183,7 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
         $this->alwaysResi = false;
 
         $access = $this->getAccessorialCodeSmall();
-        return $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $destination);
+        return $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $destination, $formData, $storeData);
     }
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential, $destination, $formData, $storeData)
