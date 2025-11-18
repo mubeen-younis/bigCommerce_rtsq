@@ -823,6 +823,7 @@ class GetRatesController extends Controller
                         }
                     }
 
+
                     $appliedFilters = ($isCategoryRestriction ? 1 : 0) + ($isBrandRestriction ? 1 : 0) + ($isProductRestriction ? 1 : 0);
                     if (($isAllFilterApplied === 1) && ($selectedFilters !== $appliedFilters)) {
                         if ($rule['rule_type'] == 10) {
@@ -1033,25 +1034,42 @@ class GetRatesController extends Controller
                         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
                         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
                         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
-                        $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? (int) $settings['is_all_filter_applied'] : 0;
+                        $isAllFilterApplied = (int)($settings['is_all_filter_applied'] ?? 0);
+                        $selectedFilters = ($isFilterCategory ? 1 : 0) + ($isFilterBrand    ? 1 : 0) + ($isFilterProduct  ? 1 : 0);
+                        $matchedFilters = 0;
 
-                        if ($isFilterProduct && isset($item['product_id']) && !empty($item['product_id'])) {
-                            $isProductExist = collect($rule['products'])->where('value', $item['product_id'])->all() ?? [];
-                            if (!(empty($isProductExist))) {
-                                $warehouses = array_merge($warehouses, $rule['warehouses']);
-                                // dd("warehouses", $warehouses);
-                            }
-                        } else if ($isFilterBrand && isset($item['brand_id']) && !empty($item['brand_id'])) {
-                            $isProductExist = in_array($item['brand_id'], $rule['brands']);
-
+                        // PRODUCT FILTER
+                        if ($isFilterProduct && !empty($item['product_id'])) {
+                            $isProductExist = collect($rule['products'])
+                                ->where('value', $item['product_id'])
+                                ->isNotEmpty();
                             if ($isProductExist) {
+                                $matchedFilters++;
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
                             }
-                        } else if ($isFilterCategory && isset($item['categories_id']) && !empty($item['categories_id'])) {
+                        }
+
+                        // BRAND FILTER
+                        if ($isFilterBrand && !empty($item['brand_id'])) {
+                            if (in_array($item['brand_id'], $rule['brands'])) {
+                                $matchedFilters++;
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        }
+                        // CATEGORY FILTER
+                        if ($isFilterCategory && !empty($item['categories_id'])) {
                             $isProductExist = array_intersect($item['categories_id'], $rule['categories']);
-
-                            if ($isProductExist) {
+                            if (!empty($isProductExist)) {
+                                $matchedFilters++;
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        }
+
+                        // FINAL CHECK
+                        if ($isAllFilterApplied === 1) {
+                            // If ANY selected filter fails, block the rule
+                            if ($matchedFilters < $selectedFilters) {
+                                return false;
                             }
                         }
                     }
