@@ -740,6 +740,7 @@ class GetRatesController extends Controller
         $storeId = $storeData['store']['id'];
         $this->storeData = $storeData ?? [];
 
+
         $this->applyRestrictOriginLocationsRule($storeId, $formatReq);
 
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
@@ -752,9 +753,10 @@ class GetRatesController extends Controller
 
             foreach ($shippingRules as $key => $rule) {
                 $settings = json_decode($rule['filter_settings'], true);
-                $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
-                $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
-                $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+                $isFilterCategory = $isFilterBrand = $isFilterProduct = false;
+                $isCategoryRestriction = $isBrandRestriction = $isProductRestriction = false;
+                $isAllFilterApplied = '';
+                $selectedFilters = $appliedFilters = $givenFlatRate = 0;
 
                 if (isset($rule['rule_type']) && ($rule['rule_type'] == 5 || $rule['rule_type'] == 8 || $rule['rule_type'] == 6)) {
                     continue;
@@ -763,38 +765,84 @@ class GetRatesController extends Controller
                 $isAvailable = $rule['available'] ?? false;
                 $applyRuleTo = $rule['apply_rule_to'] ?? 1;
                 if ($isAvailable) {
-
+                    $settings = json_decode($rule['filter_settings'], true);
+                    $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
+                    $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
+                    $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+                    $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? (int) $settings['is_all_filter_applied'] : 0;
+                    $selectedFilters = ($isFilterCategory ? 1 : 0) + ($isFilterBrand ? 1 : 0) + ($isFilterProduct ? 1 : 0);
+                    $givenFlatRate = isset($rule['filter_flat_shipping_rate']) ? $rule['filter_flat_shipping_rate'] : 0;
+                    if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
+                        $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
+                        $originalDeliveryEstimate = $quoteSettings['delivery_estimate_options'];
+                    }
                     if ($isFilterCategory) {
                         if ($rule['rule_type'] == 10) {
                             // if all the rules are not valid then return true;
-                            $isValidRule = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
-                            $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                            $isCategoryRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isApplyFlatRate = $isApplyFlatRate && false;
                             $count++;
+                        } elseif ($rule['rule_type'] == 7) {
+                            $isCategoryRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = false;
                         } else {
                             // if one of the rule is not valid then return true;
-                            $isRestriction = $isRestriction || $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isCategoryRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = $isRestriction || $isCategoryRestriction;
                         }
                     }
                     if ($isFilterBrand) {
                         if ($rule['rule_type'] == 10) {
                             // if all the rules are not valid then return true;
-                            $isValidRule = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
-                            $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                            $isBrandRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isApplyFlatRate = $isApplyFlatRate && false;
                             $count++;
+                        } elseif ($rule['rule_type'] == 7) {
+                            $isBrandRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = false;
                         } else {
                             // if one of the rule is not valid then return true;
-                            $isRestriction = $isRestriction || $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isBrandRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = $isRestriction || $isBrandRestriction;
                         }
                     }
                     if ($isFilterProduct) {
                         if ($rule['rule_type'] == 10) {
                             // if all the rules are not valid then return true;
-                            $isValidRule = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
-                            $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                            $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            // dd("flatRatepbbp", $this->formatReq['lineItemData']['items']);
+                            $isApplyFlatRate = $isApplyFlatRate && false;
                             $count++;
+                        } elseif ($rule['rule_type'] == 7) {
+                            $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = false;
                         } else {
                             // if one of the rule is not valid then return true;
-                            $isRestriction = $isRestriction || $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            $isRestriction = $isRestriction || $isProductRestriction;
+                        }
+                    }
+
+                    $appliedFilters = ($isCategoryRestriction ? 1 : 0) + ($isBrandRestriction ? 1 : 0) + ($isProductRestriction ? 1 : 0);
+                    if (($isAllFilterApplied === 1) && ($selectedFilters !== $appliedFilters)) {
+                        if ($rule['rule_type'] == 10) {
+                            foreach ($this->formatReq['lineItemData']['items'] as $key => $product) {
+                                if ($product['flatRate'] == $givenFlatRate) {
+                                    unset($this->formatReq['lineItemData']['items'][$key]['flatRate']);
+                                    unset($this->formatReq['lineItemData']['items'][$key]['isFreeShipping']);
+                                    unset($this->formatReq['lineItemData']['items'][$key]['flatRateUuid']);
+                                    unset($this->formatReq['lineItemData']['items'][$key]['flatRateRule']);
+                                }
+                            }
+                        } elseif ($rule['rule_type'] == 7) {
+                            if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
+                                $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
+                                $quoteSettings['delivery_estimate_options'] = $originalDeliveryEstimate;
+                                $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;
+                            }
+                        } else {
+
+                            return false;
                         }
                     }
                 }
@@ -825,7 +873,6 @@ class GetRatesController extends Controller
                 $categoriesProducts = collect($cartItems)->filter(function ($item) use ($categoryId) {
                     return in_array($categoryId, $item['categories_id']);
                 })->toArray() ?? [];
-
                 if (!empty($categoriesProducts)) {
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $categoriesProducts);
                 }
@@ -860,13 +907,11 @@ class GetRatesController extends Controller
         $restrictedProducts = isset($rule['products']) ? $rule['products'] : [];
         $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
         $istrue = false;
-
         if (!empty($restrictedProducts)) {
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach ($restrictedProducts as $rpKey => $productId) {
 
                 $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
-
                 if (!empty($filterProducts)) {
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);
                 }
@@ -886,8 +931,8 @@ class GetRatesController extends Controller
         $applyTo = !empty($rule['apply_to']) ? (int)$rule['apply_to'] : null;
         $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
         if ($ruleType == 7) {
-            $this->applyHideDeliveryEstimatesRule($rule);
-            return false;
+            $isRuleApplied = $this->applyHideDeliveryEstimatesRule($rule);
+            return $isRuleApplied;
         }
 
         if ($ruleType == 2 && $applyTo == 2) {
@@ -899,7 +944,12 @@ class GetRatesController extends Controller
             return false;
         }
 
-        $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], json_decode($filterCountry)));
+        $countries = json_decode($filterCountry, true);
+        if (!is_array($countries)) {
+            $countries = [$filterCountry];
+        }
+        $isSameCountry = in_array($destination['country'], $countries);
+
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
         if (!empty($origins)) {
@@ -915,15 +965,15 @@ class GetRatesController extends Controller
         } elseif ($isSameCountry && $isSameState && ($ruleType == 3 || $ruleType == 10)) {
             // Apply Flate Rate Shipping Rule for country and state
             if ($ruleType == 10 && !empty($products)) {
-                $this->applyFlatRatesShippingRule($products, $rule);
+                $isRuleApplied = $this->applyFlatRatesShippingRule($products, $rule);
             }
-            return false;
+            return $isRuleApplied;
         } elseif ($isSameCountry && ($ruleType == 1 || $ruleType == 10 && empty($rule['filter_state_province']))) {
             // Apply Flate Rate Shipping Rule for only country
             if ($ruleType == 10 && !empty($products)) {
-                $this->applyFlatRatesShippingRule($products, $rule);
+                $isRuleApplied = $this->applyFlatRatesShippingRule($products, $rule);
             }
-            return false;
+            return $isRuleApplied;
         } else {
             return true;
         }
@@ -931,6 +981,7 @@ class GetRatesController extends Controller
 
     public function applyFlatRatesShippingRule($products, $rule)
     {
+        $isRuleApplied = false;
         foreach ($products as $key => $product) {
             // check to assign cheapest flat rate rule
             $flatRate = isset($this->formatReq['lineItemData']['items'][$key]['flatRate']) ? $this->formatReq['lineItemData']['items'][$key]['flatRate'] : null;
@@ -940,29 +991,29 @@ class GetRatesController extends Controller
                 $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
                 $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
                 $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+                $isRuleApplied = true;
             } elseif ($flatRate === null) {
 
                 $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
                 $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
                 $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
                 $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+                $isRuleApplied = true;
             }
         }
+        return $isRuleApplied;
     }
 
     public function applyHideDeliveryEstimatesRule($rule)
     {
-            Log::info('++++++++++++++++++++++ applyHideDeliveryEstimatesRule on line 955' . json_encode([
-            $this->connectionSettings
-        ]));
+        $isRuleApplied = false;
         if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
-              Log::info('+++++++++++------------+++++++++++ quote_settings on line 959' . json_encode([
-            $this->connectionSettings
-        ]));
             $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
             $quoteSettings['delivery_estimate_options'] = 1;
             $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;
+            $isRuleApplied = true;
         }
+        return $isRuleApplied;
     }
 
     public function applyRestrictOriginLocationsRule($storeId, $formatReq)
@@ -978,19 +1029,25 @@ class GetRatesController extends Controller
                     $isAvailable = $rule['available'] ?? false;
 
                     if ($isAvailable) {
-                        if (isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 3 && isset($item['product_id']) && !empty($item['product_id'])) {
-                            $isProductExist = collect($rule['products'])->where('value', $item['product_id'])->all() ?? [];
+                        $settings = json_decode($rule['filter_settings'], true);
+                        $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
+                        $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
+                        $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+                        $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? (int) $settings['is_all_filter_applied'] : 0;
 
+                        if ($isFilterProduct && isset($item['product_id']) && !empty($item['product_id'])) {
+                            $isProductExist = collect($rule['products'])->where('value', $item['product_id'])->all() ?? [];
                             if (!(empty($isProductExist))) {
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
+                                // dd("warehouses", $warehouses);
                             }
-                        } else if (isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 2 && isset($item['brand_id']) && !empty($item['brand_id'])) {
+                        } else if ($isFilterBrand && isset($item['brand_id']) && !empty($item['brand_id'])) {
                             $isProductExist = in_array($item['brand_id'], $rule['brands']);
 
                             if ($isProductExist) {
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
                             }
-                        } else if (isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 1 && isset($item['categories_id']) && !empty($item['categories_id'])) {
+                        } else if ($isFilterCategory && isset($item['categories_id']) && !empty($item['categories_id'])) {
                             $isProductExist = array_intersect($item['categories_id'], $rule['categories']);
 
                             if ($isProductExist) {

@@ -159,6 +159,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -199,6 +200,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -214,6 +216,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -228,6 +231,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -271,7 +275,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
-
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -323,6 +327,7 @@ class ShippingRule extends Model
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -483,6 +488,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
@@ -508,6 +514,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
@@ -588,6 +595,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
@@ -606,6 +614,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
@@ -623,6 +632,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
@@ -638,6 +648,7 @@ class ShippingRule extends Model
         $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
         $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
         $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
         return $shippingRule;
     }
