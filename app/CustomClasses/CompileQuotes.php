@@ -4926,7 +4926,6 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         $hatShipments = $finalCompiledQuotes = $compiledQuotes = $originQuotes = [];
-
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
             $this->isSurchargeRates = false;
@@ -4964,7 +4963,6 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
                     }
                     $hazShipmentArr[$origin] = 'N';
                 }
-
 
                 foreach ($quote as $key => $data) {
                     $isHATQuote = isset($data['holdAtTerminalResponse']['serviceType']) && strpos($data['holdAtTerminalResponse']['serviceType'], 'HAT+') !== false;

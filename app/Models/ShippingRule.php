@@ -316,10 +316,20 @@ class ShippingRule extends Model
                 case 10:
                     $shippingRule->filter_name = json_encode($shippingRuleData['filter_country'] ?? []);
                     $settings = [
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false,
+                        "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+                        "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                        "weightFrom" => $shippingRuleData['weight_from'] ?? '',
+                        "weightTo" => $shippingRuleData['weight_to'] ?? '',
+                        "priceFrom" => $shippingRuleData['price_from'] ?? '',
+                        "priceTo" => $shippingRuleData['price_to'] ?? '',
+                        "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
+                        "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
                         "filter_products" => $shippingRuleData['filter_products'] ?? [],
                         "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                        "filter_country" => $shippingRuleData['filter_country'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_flat_shipping_rate" => $shippingRuleData['filter_flat_shipping_rate'] ?? '',
                         "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '',
@@ -602,11 +612,21 @@ class ShippingRule extends Model
 
     public static function updateFlatShippingPriceParams($shippingRule)
     {
-        $shippingRule['filter_country'] = $shippingRule['filter_name'];
+        $shippingRule['filter_country'] = $shippingRule['filter_country'] ?? [];
         $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['isFilterWeight'] = $settings['isFilterWeight'] ?? false;
+        $shippingRule['isFilterPrice'] = $settings['isFilterPrice'] ?? false;
+        $shippingRule['isFilterQuantity'] = $settings['isFilterQuantity'] ?? false;
+        $shippingRule['weight_from'] = $settings['weightFrom'] ?? null;
+        $shippingRule['weight_to'] = $settings['weightTo'] ?? null;
+        $shippingRule['price_from'] = $settings['priceFrom'] ?? null;
+        $shippingRule['price_to'] = $settings['priceTo'] ?? null;
+        $shippingRule['quantity_from'] = $settings['quantityFrom'] ?? null;
+        $shippingRule['quantity_to'] = $settings['quantityTo'] ?? null;
         $shippingRule['products'] = $settings['filter_products'] ?? [];
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
+        $shippingRule['filter_country'] = $settings['filter_country'];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
         $shippingRule['filter_flat_shipping_rate'] = $settings['filter_flat_shipping_rate'] ?? '';
         $shippingRule['isFilterFlatPrice'] = $settings['isFilterFlatPrice'] ?? false;

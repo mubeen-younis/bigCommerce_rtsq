@@ -342,6 +342,7 @@ class ShippingRuleController extends Controller
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $isRuletrue['istrue'];
                                     break;
                                 case 1:
                                     $isRuletrue = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData);
@@ -376,6 +377,7 @@ class ShippingRuleController extends Controller
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $isRuletrue['istrue'];
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
@@ -642,8 +644,6 @@ class ShippingRuleController extends Controller
                 return true;
             }
         }
-        // dd("derSzz", $isFilterWeight, $isFilterPrice, $isFilterQuantity, $isLocationFilter, $isFilterCategory, $isFilterBrand,
-        // $isFilterProduct);
 
         if (($isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true || $categoriesResult === true || $brandsResult === true
             || $productsResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
@@ -953,6 +953,8 @@ class ShippingRuleController extends Controller
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
+        $products = [];
+
 
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
@@ -1022,6 +1024,8 @@ class ShippingRuleController extends Controller
 
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $products = $productsResult['filterProducts'];
+            $productsResult = $productsResult['istrue'];
             if ($productsResult === false) {
                 $productsResult = 2;
             }
@@ -1035,17 +1039,29 @@ class ShippingRuleController extends Controller
                 $isFilterWeight === 2 || $isFilterPrice === 2 || $isFilterQuantity === 2 || $isSameLocation === 2
                 || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2
             ) {
-                return true;
+                 return [
+                'istrue' => true,
+                'products' => [],
+            ];
             }
         }
-
-        if (($isFilterWeight || $isFilterPrice || $isFilterQuantity || $isSameLocation || $categoriesResult || $brandsResult
-            || $productsResult) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
+        if (($isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true || $categoriesResult === true || $brandsResult === true
+            || $productsResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
             && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck)) {
-            return false;
+            if ($shippingRule['rule_type'] == self::FLAT_RATE) {
+                    $products = $items;
+            }
+
+            return [
+                'istrue' => false,
+                'products' => $products,
+            ];
         }
 
-        return true;
+        return [
+                'istrue' => true,
+                'products' => [],
+            ];
     }
 
 
@@ -1182,7 +1198,8 @@ class ShippingRuleController extends Controller
                         $filterCategories = collect($productsCategoriesIds)->intersect(empty($rule['categories']) ? [] : $rule['categories']) ?? [];
 
                         if (!empty($filterCategories->toArray())) {
-                            return $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            return $isRuletrue['istrue'];
                         }
                         // Check: apply rule to Brands
                     } elseif ($rule['apply_rule_to'] == 2) {
@@ -1190,7 +1207,8 @@ class ShippingRuleController extends Controller
                         $filterBrands = collect($brandsIds)->intersect(empty($rule['brands']) ? [] : $rule['brands']) ?? [];
 
                         if (!empty($filterBrands->toArray())) {
-                            return $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            return $isRuletrue['istrue'];
                         }
                         // Check: apply rule to Individual Products
                     } elseif ($rule['apply_rule_to'] == 3) {
@@ -1199,7 +1217,8 @@ class ShippingRuleController extends Controller
 
                         foreach ($productIds as $prod) {
                             if (in_array($prod, $productIdsArray)) {
-                                return $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                return $isRuletrue['istrue'];
                             }
                         }
                     }
@@ -1327,7 +1346,10 @@ class ShippingRuleController extends Controller
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts, $formatReq, $connectionSettings);
                 }
             }
-            return $istrue;
+            return [
+                'istrue' => $istrue,
+                'filterProducts' => $filterProducts,
+            ];
         }
         return false;
     }
