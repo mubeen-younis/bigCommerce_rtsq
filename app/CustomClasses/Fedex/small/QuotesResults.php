@@ -159,7 +159,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $alwaysResi, $isSbsEnable, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $alwaysResi, $isSbsEnable, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes, $formData, $storeData, $addressStatus)
     {
         $shippingRule = new ShippingRuleController();
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
@@ -298,10 +298,10 @@ class QuotesResults
                     }
 
                     // Apply override rates shipping rule
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins, $destination);
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins, $destination, $formData, $storeData, $addressStatus);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     // Apply Surcharge rates shipping rule
-                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins, $destination);
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins, $destination, $formData, $storeData, $addressStatus);
                     $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
                     $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
 

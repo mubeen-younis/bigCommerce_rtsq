@@ -25,6 +25,7 @@ use App\Models\ShippingRule;
 use App\Models\NestingItemsDetail;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
+use App\CustomClasses\GenerateRequestData;
 
 class GetRatesController extends Controller
 {
@@ -113,6 +114,9 @@ class GetRatesController extends Controller
                 return [];
             }
         }
+        $destination = $this->formatReq['lineItemData']['destination'] ?? [];
+        $generateRequestData = new GenerateRequestData();
+        $addressStatus = $generateRequestData->checkAddressStatusForShippingRule($storeData['store']['id'], $destination);
 
         /*
         * Restrict to Country,
@@ -122,7 +126,7 @@ class GetRatesController extends Controller
         * Hide Delivery Estimates,
         * Flat Shipping Rate Rules implementation
         */
-        if ($this->isRestrictionShippingRulesApplied($storeData, $this->formatReq)) {
+        if ($this->isRestrictionShippingRulesApplied($storeData, $this->formatReq, $addressStatus)) {
             return [];
         }
 
@@ -131,7 +135,7 @@ class GetRatesController extends Controller
             $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
         }
 
-        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
+        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled, $addressStatus);
 
         return $quotes;
     }
@@ -750,7 +754,7 @@ class GetRatesController extends Controller
         return $result;
     }
 
-    public function isRestrictionShippingRulesApplied($storeData, $formatReq)
+    public function isRestrictionShippingRulesApplied($storeData, $formatReq, $addressStatus)
     {
         $isRestriction = false;
         $isApplyFlatRate = true;
@@ -765,6 +769,7 @@ class GetRatesController extends Controller
         if (!empty($shippingRules)) {
 
             $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
+            $items = $formatReq['lineItemData']['items'];
             $origins = isset($formatReq['lineItemData']['origin']) ? $formatReq['lineItemData']['origin'] : [];
             $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
             $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
@@ -795,6 +800,7 @@ class GetRatesController extends Controller
                     $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
                     $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
                     $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+                    $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     if (is_string($filterCountry)) {
                         $countries = json_decode($filterCountry, true) ?? [];
                     } else {
@@ -804,106 +810,47 @@ class GetRatesController extends Controller
                         $countries = [$filterCountry];
                     }
                     $isSameCountry = in_array($destination['country'], $countries);
-
                     $isSameState = in_array($destination['state'], $statesCode) ?? false;
                     $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
                     if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
                         $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
                         $originalDeliveryEstimate = $quoteSettings['delivery_estimate_options'];
                     }
-                    $noFilterSelected = $isFilterCategory === false && $isFilterBrand === false && $isFilterProduct === false;
-                    //if no filters selected for Restrict to Country, State, Postal Code and Hide Delivery Estimates shipping rules
-
-                    if (($noFilterSelected) && ($rule['rule_type'] == self::RESTRICT_COUNTRY || $rule['rule_type'] == self::RESTRICT_STATE ||
-                            $rule['rule_type'] == self::RESTRICT_POSTAL_CODE || $rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES)
-                    ) {
-                        if ((!$isSameCountry || !$isSameState || !$isSamePostalCode) && ($rule['rule_type'] == self::RESTRICT_POSTAL_CODE)) {
-                            return true;
-                        }
-                        if ((!$isSameCountry || !$isSameState) && ($rule['rule_type'] == self::RESTRICT_STATE)) {
-                            return true;
-                        }
-                        if (!$isSameCountry && $rule['rule_type'] == self::RESTRICT_COUNTRY) {
-                            return true;
-                        }
-                        if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
-                            $this->applyHideDeliveryEstimatesRule($rule);
+                  
+                    // Show Methods
+                    if ($rule['rule_type'] == self::RESTRICT_COUNTRY) {
+                        foreach ($this->connectionSettings as $key => $carrier) {
+                            if ($key == $provider) {
+                                $shippingRules = new ShippingRuleController();
+                                $isRuleTrue = $shippingRules->hideMethods($rule, $items, $destination, $formatReq, $storeData, $addressStatus);
+                                if ($isRuleTrue === true) {
+                                    return true;
+                                }
+                            }
                         }
                     }
 
                     // Flat Shipping Rate Rule
                     if ($rule['rule_type'] == self::FLAT_RATE) {
                         // if all the rules are not valid then return true;
-                        $isCategoryRestriction = $this->applyFlatRatesShippingRule($this->formatReq, $rule);
+                        $isCategoryRestriction = $this->applyFlatRatesShippingRule($this->formatReq, $rule, $addressStatus);
                         // $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
                         $isApplyFlatRate = $isApplyFlatRate && false;
                         $count++;
                     }
 
-                    // Categories Filter Check
-                    if ($isFilterCategory) {
-                        if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
-                            $isCategoryRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = false;
-                        }
-                        if ($rule['rule_type'] == self::RESTRICT_COUNTRY || $rule['rule_type'] == self::RESTRICT_STATE || $rule['rule_type'] == self::RESTRICT_POSTAL_CODE) {
-                            // if one of the rule is not valid then return true;
-                            $isCategoryRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = $isRestriction || $isCategoryRestriction;
-                        }
+                    // Hide Delivery Estimates Rule
+                    if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
+                        $isCategoryRestriction = $this->applyHideDeliveryEstimatesRule($this->formatReq, $rule, $addressStatus);
+                        $isRestriction = false;
                     }
 
-                    //Brands Filter Check
-                    if ($isFilterBrand) {
-                        if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
-                            $isBrandRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = false;
-                        }
-                        if ($rule['rule_type'] == self::RESTRICT_COUNTRY || $rule['rule_type'] == self::RESTRICT_STATE || $rule['rule_type'] == self::RESTRICT_POSTAL_CODE) {
-                            // if one of the rule is not valid then return true;
-                            $isBrandRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = $isRestriction || $isBrandRestriction;
-                        }
-                    }
-
-                    //Products Filter Check
-                    if ($isFilterProduct) {
-                        if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
-                            $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = false;
-                        }
-                        if ($rule['rule_type'] == self::RESTRICT_COUNTRY || $rule['rule_type'] == self::RESTRICT_STATE || $rule['rule_type'] == self::RESTRICT_POSTAL_CODE) {
-                            // if one of the rule is not valid then return true;
-                            $isProductRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces, $isLocationFilter, $isFilterCategory, $isFilterBrand, $isFilterProduct, $isAllFilterApplied);
-                            $isRestriction = $isRestriction || $isProductRestriction;
-                        }
-                    }
-
-                    /* If ANY selected filter fails, block the
-                    * Restrict to Country, State and Postal Code Rules
-                    * Hide Delivery Estimates Rule
-                    * Flat Shipping Rate Rule
-                    */
-                    $appliedFilters = ($isCategoryRestriction ? 1 : 0) + ($isBrandRestriction ? 1 : 0) + ($isProductRestriction ? 1 : 0);
-                    if (($isAllFilterApplied === 1) && ($selectedFilters !== $appliedFilters)) {
-                        if ($rule['rule_type'] == self::HIDE_DELIVERY_ESTIMATES) {
-                            if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
-                                $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
-                                $quoteSettings['delivery_estimate_options'] = $originalDeliveryEstimate;
-                                $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;
-                            }
-                        } else {
-
-                            return false;
-                        }
-                    }
                 }
             }
             // This check only for Flat Shipping Rate Rule.
             if ($rule['rule_type'] == self::FLAT_RATE && $isApplyFlatRate && $count > 0) {
                 return $isApplyFlatRate;
             }
-
             return $isRestriction;
         }
         return false;
@@ -1034,7 +981,7 @@ class GetRatesController extends Controller
     }
 
 
-    public function applyFlatRatesShippingRule($formRequest, $rule)
+    public function applyFlatRatesShippingRule($formRequest, $rule, $addressStatus)
     {
         $settings = json_decode($rule['filter_settings'], true);
         $destination = $formRequest['lineItemData']['destination'] ?? [];
@@ -1088,7 +1035,7 @@ class GetRatesController extends Controller
         }
 
         $shippingRuleController = new ShippingRuleController();
-        $isRuletrue = $shippingRuleController->checkIsSurchargeRuleApply($rule, $this->formatReq['lineItemData']['items'], null, null, $this->formatReq['lineItemData']['destination'], null, $this->formatReq, null);
+        $isRuletrue = $shippingRuleController->checkIsSurchargeRuleApply($rule, $this->formatReq['lineItemData']['items'], null, null, $this->formatReq['lineItemData']['destination'], null, $this->formatReq, null, $addressStatus);
         $isRuleApplied = false;
         if (!$isRuletrue['istrue']) {
             foreach ($isRuletrue['products'] as $key => $product) {                // check to assign cheapest flat rate rule
@@ -1112,14 +1059,19 @@ class GetRatesController extends Controller
         return $isRuleApplied;
     }
 
-    public function applyHideDeliveryEstimatesRule($rule)
+    public function applyHideDeliveryEstimatesRule($formRequest, $rule, $addressStatus)
     {
         $isRuleApplied = false;
-        if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
-            $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
-            $quoteSettings['delivery_estimate_options'] = 1;
-            $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;
-            $isRuleApplied = true;
+        $shippingRuleController = new ShippingRuleController();
+        $isRuletrue = $shippingRuleController->checkIsSurchargeRuleApply($rule, $this->formatReq['lineItemData']['items'], null, null, $this->formatReq['lineItemData']['destination'], null, $this->formatReq, null, $addressStatus);
+        $isRuleApplied = false;
+        if (!$isRuletrue['istrue']) {
+            if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
+                $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
+                $quoteSettings['delivery_estimate_options'] = 1;
+                $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings;
+                $isRuleApplied = true;
+            }
         }
         return $isRuleApplied;
     }

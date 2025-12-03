@@ -86,7 +86,7 @@ class ShippingRuleController extends Controller
         return Helpers::sendJsonResponse(false, null, $shippingRuleDetail);
     }
 
-    public function applyHideMethodRule($storeId, $lineItemData, $connectionSettings, $destination, $formData, $storeData)
+    public function applyHideMethodRule($storeId, $lineItemData, $connectionSettings, $destination, $formData, $storeData, $addressStatus)
     {
         $is_true = false;
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
@@ -99,7 +99,7 @@ class ShippingRuleController extends Controller
                     switch ($rule['rule_type']) {
                         case 2:
                             if (isset($rule['apply_to']) && $rule['apply_to'] == 1) {
-                                $is_true = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData);
+                                $is_true = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData, $addressStatus);
                                 if (!$is_true) {
                                     foreach ($connectionSettings as $key => $carrier) {
                                         if ($key == $provider) {
@@ -116,7 +116,7 @@ class ShippingRuleController extends Controller
         return $connectionSettings;
     }
 
-    public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [], $destination, $formData, $storeData)
+    public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [], $destination, $formData, $storeData, $addressStatus)
     {
         $isRuletrue = $isSamedayApi = false;
         $carrierType = 0;
@@ -136,7 +136,6 @@ class ShippingRuleController extends Controller
                     $isSameCountry = $destination['country'] == $filterCountry ?? false;
                     $isSameState = in_array($destination['state'], $statesCode) ?? false;
                     $maxShippingRateFilter = isset($ruleSettings['filter_max_shipping_rate']) ? (int)$ruleSettings['filter_max_shipping_rate'] : '';
-
 
                     $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
@@ -174,24 +173,24 @@ class ShippingRuleController extends Controller
                             $isSamedayApi = true;
                         }
                     }
-
                     $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
                     if ($rule['rule_type'] == self::OVERRIDE_RULE && $carrierId != null && $carrierName == $carrIndexName) {
                         switch ($rule['apply_to']) {
                             case 0: //Apply Shipments level
-                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData);
+                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
                                 break;
                             case 1: //Apply Cart level
-                                $isRuletrue = $this->overrideHideMethods($rule, $cartItems, $destination, $maxShippingRateFilter, $quote, $formData, $storeData);
+                                $isRuletrue = $this->overrideHideMethods($rule, $cartItems, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
                                 break;
                             case 2: //Apply Products level
-                                $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                 break;
                             default:
                                 break;
                         }
+
                         if (!$isRuletrue) {
                             if ($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
@@ -290,7 +289,7 @@ class ShippingRuleController extends Controller
         return ['data' => $quote, 'isOverrideRates' => $isOverrideRates];
     }
 
-    public function surchargeRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [], $destination, $formData, $storeData)
+    public function surchargeRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [], $destination, $formData, $storeData, $addressStatus)
     {
         $isRuletrue = false;
         $carrierType = 0;
@@ -341,14 +340,14 @@ class ShippingRuleController extends Controller
                         if ($carrierType == 2 && $carrierId !== null && $carrierName == $carrIndexName) {
                             switch ($rule['apply_to']) {
                                 case 0:
-                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                     $isRuletrue = $isRuletrue['istrue'];
                                     break;
                                 case 1:
-                                    $isRuletrue = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData);
+                                    $isRuletrue = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData, $addressStatus);
                                     break;
                                 case 2:
-                                    $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
@@ -376,7 +375,7 @@ class ShippingRuleController extends Controller
                         if ($rule['rule_type'] == self::SURCHARGE_RULE && $carrierId !== null && $carrierName == $carrIndexName) {
                             switch ($rule['apply_to']) {
                                 case 0:
-                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                     $isRuletrue = $isRuletrue['istrue'];
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
@@ -384,14 +383,14 @@ class ShippingRuleController extends Controller
                                     }
                                     break;
                                 case 1:
-                                    $isRuletrue = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData);
+                                    $isRuletrue = $this->hideMethods($rule, $cartItems, $destination, $formData, $storeData, $addressStatus);
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
                                     }
                                     break;
                                 case 2:
-                                    $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                    $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
@@ -413,7 +412,7 @@ class ShippingRuleController extends Controller
     }
 
 
-    public function overrideAccessorialsfee($quote, $rule, $destination, int $maxShippingRateFilter)
+    public function  overrideAccessorialsfee($quote, $rule, $destination, int $maxShippingRateFilter)
     {
         $updateCount = 0;
         $serviceIndex = Functions::$accessorialServices;
@@ -464,22 +463,22 @@ class ShippingRuleController extends Controller
         }
 
         // Determine if location conditions are met
-        $shouldApplyRule = false;
-        if ($hasLocationFilter) {
-            if (!empty($stateProvince)) {
-                // Country + State filter
-                $shouldApplyRule = ($isSameCountry && $isSameState);
-            } else {
-                // Only Country filter
-                $shouldApplyRule = $isSameCountry;
-            }
-        } else {
-            // No location filter
-            $shouldApplyRule = (!$isSameCountry || (!$isSameState && !$isSameCountry));
-        }
+        // $shouldApplyRule = false;
+        // if ($hasLocationFilter) {
+        //     if (!empty($stateProvince)) {
+        //         // Country + State filter
+        //         $shouldApplyRule = ($isSameCountry && $isSameState);
+        //     } else {
+        //         // Only Country filter
+        //         $shouldApplyRule = $isSameCountry;
+        //     }
+        // } else {
+        //     // No location filter
+        //     $shouldApplyRule = (!$isSameCountry || (!$isSameState && !$isSameCountry));
+        // }
 
         // Only proceed if location conditions are met
-        if ($shouldApplyRule && isset($rule['service_rates']) && $rule['service_rates'] >= 0) {
+        if (isset($rule['service_rates']) && $rule['service_rates'] >= 0) {
 
             // Handle individual accessorial services (non-transportation)
             $totalAccessorialCharges = 0;
@@ -537,7 +536,7 @@ class ShippingRuleController extends Controller
         return $quoteSettings;
     }
 
-    public function hideMethods($shippingRule, $items, $destination, $formData, $storeData)
+    public function hideMethods($shippingRule, $items, $destination, $formData, $storeData, $addressStatus)
     {
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
@@ -548,18 +547,22 @@ class ShippingRuleController extends Controller
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
         $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-
+        $postalCodes = isset($shippingRule['filter_postal_code']) ? $shippingRule['filter_postal_code'] : '';
+        $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+
+        $isAddressType = isset($settings['isAddressType']) ? $settings['isAddressType'] : false;
+        $selectedAddressType = isset($settings['selected_address_type']) ? $settings['selected_address_type'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
 
-        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = false;
-        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = false;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = $addressTypeResult = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = $addressTypeResultCheck = false;
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -599,7 +602,7 @@ class ShippingRuleController extends Controller
 
         $isLocationFilter = $settings['isLocationFilter'];
         if ($isLocationFilter && !empty($filterCountry)) {
-            if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
+            if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince) && empty($postalCodes)) || ($isSameCountry && $isSameState && $isSamePostalCode && !empty($stateProvince) && !empty($postalCodes)) || !empty($postalCodes) && $isSamePostalCode) {
                 $isSameLocation = true;
             } else {
                 $isSameLocation = 2;
@@ -610,6 +613,7 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
                 $categoriesResult = 2;
             }
@@ -618,6 +622,7 @@ class ShippingRuleController extends Controller
         }
         if ($isFilterBrand === true) {
             $brandsResult = $this->applyRuleOnBrands($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $brandsResult = $brandsResult['istrue'];
             if ($brandsResult === false) {
                 $brandsResult = 2;
             }
@@ -627,6 +632,7 @@ class ShippingRuleController extends Controller
 
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $productsResult = $productsResult['istrue'];
             if ($productsResult === false) {
                 $productsResult = 2;
             }
@@ -634,26 +640,38 @@ class ShippingRuleController extends Controller
             $productsResultCheck = true;
         }
 
+        // Is Address Type Filter
+        if ($isAddressType === true) {
+            // dd("qwwee", $isAddressType, $addressStatus, $selectedAddressType);
+            if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
+                $addressTypeResult = true;
+            } else {
+                $addressTypeResult = 2;
+            }
+        } else {
+            $addressTypeResultCheck = true;
+        }
+
         // All filter applied check
         if ($isAllFilterApplied == 1) {
             // If any of the filters are NOT applied
             if (
                 $isFilterWeight === 2 || $isFilterPrice === 2 || $isFilterQuantity === 2 || $isSameLocation === 2
-                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2
+                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2 || $addressTypeResult === 2
             ) {
                 return true;
             }
         }
 
         if (($isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true || $categoriesResult === true || $brandsResult === true
-            || $productsResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
-            && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck)) {
+            || $productsResult === true || $addressTypeResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
+            && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck && $addressTypeResultCheck)) {
             return false;
         }
         return true;
     }
 
-    public function overrideHideMethods($shippingRule, $items, $destination, $maxShippingRateFilter, $quote, $formData, $storeData)
+    public function overrideHideMethods($shippingRule, $items, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus)
     {
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
@@ -672,13 +690,16 @@ class ShippingRuleController extends Controller
         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
 
+        $isAddressType = isset($settings['isAddressType']) ? $settings['isAddressType'] : false;
+        $selectedAddressType = isset($settings['selected_address_type']) ? $settings['selected_address_type'] : false;
+
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
 
-        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = false;
-        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = false;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = $addressTypeResult = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = $addressTypeResultCheck = false;
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -740,6 +761,7 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
                 $categoriesResult = 2;
             }
@@ -748,37 +770,49 @@ class ShippingRuleController extends Controller
         }
         if ($isFilterBrand === true) {
             $brandsResult = $this->applyRuleOnBrands($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $brandsResult = $brandsResult['istrue'];
             if ($brandsResult === false) {
                 $brandsResult = 2;
             }
         } else {
             $brandsResultCheck = true;
         }
-
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $productsResult = $productsResult['istrue'];
             if ($productsResult === false) {
                 $productsResult = 2;
             }
         } else {
             $productsResultCheck = true;
         }
+
+        // Is Address Type Filter
+        if ($isAddressType === true) {
+            if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
+                $addressTypeResult = true;
+            } else {
+                $addressTypeResult = 2;
+            }
+        } else {
+            $addressTypeResultCheck = true;
+        }
+
         // All filter applied check
         if ($isAllFilterApplied == 1) {
             // If any of the filters are NOT applied
             if (
                 $isFilterWeight === 2 || $isFilterPrice === 2 || $isFilterQuantity === 2 || $isSameLocation === 2
                 || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2 || $orginalShippingRateExceeds === 2
+                || $addressTypeResult === 2
             ) {
                 return true;
             }
         }
-        // dd("derS", $isFilterWeight, $isFilterPrice, $isFilterQuantity, $isSameLocation, $categoriesResult, $brandsResult,
-        // $productsResult);
 
         if (($isFilterMaxShippingRate == false && $isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true
-                || $categoriesResult === true || $brandsResult === true || $productsResult === true) || ($isFilterMaxShippingRate == false && $isFilterWeightCheck && $isFilterPriceCheck
-                && $isFilterQuantityCheck && $isSameLocationCheck && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck)
+                || $categoriesResult === true || $brandsResult === true || $productsResult === true || $addressTypeResult === true) || ($isFilterMaxShippingRate == false && $isFilterWeightCheck && $isFilterPriceCheck
+                && $isFilterQuantityCheck && $isSameLocationCheck && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck && $addressTypeResultCheck)
             || ($isFilterMaxShippingRate == true && $orginalShippingRateExceeds)
         ) {
             return false;
@@ -788,14 +822,14 @@ class ShippingRuleController extends Controller
 
 
 
-    public function checkIsOverrideRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData)
+    public function checkIsOverrideRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus)
     {
         $variants = [];
         $totalWeight = 0;
         $totalQuantity = 0;
         $totalPrice = 0;
-        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = false;
-        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = false;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = $addressTypeResult = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = $addressTypeResultCheck = false;
 
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
@@ -813,6 +847,9 @@ class ShippingRuleController extends Controller
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+
+        $isAddressType = isset($settings['isAddressType']) ? $settings['isAddressType'] : false;
+        $selectedAddressType = isset($settings['selected_address_type']) ? $settings['selected_address_type'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
@@ -878,6 +915,7 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
                 $categoriesResult = 2;
             }
@@ -886,6 +924,7 @@ class ShippingRuleController extends Controller
         }
         if ($isFilterBrand === true) {
             $brandsResult = $this->applyRuleOnBrands($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $brandsResult = $brandsResult['istrue'];
             if ($brandsResult === false) {
                 $brandsResult = 2;
             }
@@ -895,6 +934,7 @@ class ShippingRuleController extends Controller
 
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $productsResult = $productsResult['istrue'];
             if ($productsResult === false) {
                 $productsResult = 2;
             }
@@ -902,12 +942,23 @@ class ShippingRuleController extends Controller
             $productsResultCheck = true;
         }
 
+        // Is Address Type Filter
+        if ($isAddressType === true) {
+            if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
+                $addressTypeResult = true;
+            } else {
+                $addressTypeResult = 2;
+            }
+        } else {
+            $addressTypeResultCheck = true;
+        }
+
         // If all filters are required but any one is not applied, return true
         if ($isAllFilterApplied == 1) {
             // If any of the filters are NOT applied
             if (
                 $isFilterWeight === 2 || $isFilterPrice === 2 || $isFilterQuantity === 2 || $isSameLocation === 2
-                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2
+                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2 || $addressTypeResult === 2
             ) {
                 return true;
             }
@@ -915,8 +966,8 @@ class ShippingRuleController extends Controller
         // --- Final decision (unchanged) ---
         if (
             ($isFilterMaxShippingRate == false && $isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true
-                || $categoriesResult === true || $brandsResult === true || $productsResult === true) || ($isFilterMaxShippingRate == false && $isFilterWeightCheck && $isFilterPriceCheck
-                && $isFilterQuantityCheck && $isSameLocationCheck && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck)
+                || $categoriesResult === true || $brandsResult === true || $productsResult === true || $addressTypeResult === true) || ($isFilterMaxShippingRate == false && $isFilterWeightCheck && $isFilterPriceCheck
+                && $isFilterQuantityCheck && $isSameLocationCheck && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck && $addressTypeResultCheck)
             || ($isFilterMaxShippingRate == true && $orginalShippingRateExceeds)
         ) {
             return false;
@@ -925,7 +976,7 @@ class ShippingRuleController extends Controller
     }
 
 
-    public function checkIsSurchargeRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData)
+    public function checkIsSurchargeRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus)
     {
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
@@ -938,8 +989,8 @@ class ShippingRuleController extends Controller
         $totalWeight = 0;
         $totalQuantity = 0;
         $totalPrice = 0;
-        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = false;
-        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = false;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = $isSameLocation = $categoriesResult = $brandsResult = $productsResult = $addressTypeResult = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = $isSameLocationCheck = $categoriesResultCheck = $productsResultCheck = $brandsResultCheck = $addressTypeResultCheck = false;
 
         $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
@@ -949,6 +1000,9 @@ class ShippingRuleController extends Controller
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
         $isFilterProduct = isset($settings['isFilterProduct']) ? $settings['isFilterProduct'] : false;
+
+        $isAddressType = isset($settings['isAddressType']) ? $settings['isAddressType'] : false;
+        $selectedAddressType = isset($settings['selected_address_type']) ? $settings['selected_address_type'] : false;
 
         $hasLocationFilter = ($filterCountry !== '' || !empty($stateProvince));
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
@@ -993,7 +1047,8 @@ class ShippingRuleController extends Controller
             $isFilterQuantityCheck = true;
         }
 
-        $isLocationFilter = $settings['isLocationFilter'];
+        $isLocationFilter = isset($settings['isLocationFilter']) ? $settings['isLocationFilter'] : false;
+        // $isLocationFilter = $settings['isLocationFilter'];
         if ($isLocationFilter && !empty($filterCountry)) {
             if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                 $isSameLocation = true;
@@ -1007,6 +1062,8 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $products = $categoriesResult['filterProducts'];
+            $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
                 $categoriesResult = 2;
             }
@@ -1015,6 +1072,8 @@ class ShippingRuleController extends Controller
         }
         if ($isFilterBrand === true) {
             $brandsResult = $this->applyRuleOnBrands($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            $products = $brandsResult['filterProducts'];
+            $brandsResult = $brandsResult['istrue'];
             if ($brandsResult === false) {
                 $brandsResult = 2;
             }
@@ -1033,35 +1092,45 @@ class ShippingRuleController extends Controller
             $productsResultCheck = true;
         }
 
+        // Is Address Type Filter
+        if ($isAddressType === true) {
+            // dd("qwwee", $isAddressType, $addressStatus, $selectedAddressType);
+            if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
+                $addressTypeResult = true;
+            } else {
+                $addressTypeResult = 2;
+            }
+        } else {
+            $addressTypeResultCheck = true;
+        }
+
         // Condition for isAllFilterApplied
         if ($isAllFilterApplied == 1) {
             if (
                 $isFilterWeight === 2 || $isFilterPrice === 2 || $isFilterQuantity === 2 || $isSameLocation === 2
-                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2
+                || $categoriesResult === 2 || $brandsResult === 2 || $productsResult === 2 || $addressTypeResult === 2
             ) {
-                 return [
-                'istrue' => true,
-                'products' => [],
-            ];
+                return [
+                    'istrue' => true,
+                    'products' => [],
+                ];
             }
         }
         if (($isFilterWeight === true || $isFilterPrice === true || $isFilterQuantity === true || $isSameLocation === true || $categoriesResult === true || $brandsResult === true
-            || $productsResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
-            && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck)) {
+            || $productsResult === true || $addressTypeResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
+            && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck && $addressTypeResultCheck)) {
             if ($shippingRule['rule_type'] == self::FLAT_RATE) {
-                    $products = $items;
+                $products = $items;
             }
-
             return [
                 'istrue' => false,
                 'products' => $products,
             ];
         }
-
         return [
-                'istrue' => true,
-                'products' => [],
-            ];
+            'istrue' => true,
+            'products' => [],
+        ];
     }
 
 
@@ -1183,7 +1252,7 @@ class ShippingRuleController extends Controller
         }
     }
 
-    public function checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData)
+    public function checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus)
     {
         // Check: Product exist in provided $originKey
         if (!empty($allOrigins)) {
@@ -1198,7 +1267,7 @@ class ShippingRuleController extends Controller
                         $filterCategories = collect($productsCategoriesIds)->intersect(empty($rule['categories']) ? [] : $rule['categories']) ?? [];
 
                         if (!empty($filterCategories->toArray())) {
-                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                             return $isRuletrue['istrue'];
                         }
                         // Check: apply rule to Brands
@@ -1207,7 +1276,7 @@ class ShippingRuleController extends Controller
                         $filterBrands = collect($brandsIds)->intersect(empty($rule['brands']) ? [] : $rule['brands']) ?? [];
 
                         if (!empty($filterBrands->toArray())) {
-                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                            $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                             return $isRuletrue['istrue'];
                         }
                         // Check: apply rule to Individual Products
@@ -1217,7 +1286,7 @@ class ShippingRuleController extends Controller
 
                         foreach ($productIds as $prod) {
                             if (in_array($prod, $productIdsArray)) {
-                                $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData);
+                                $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $products, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $formData, $storeData, $addressStatus);
                                 return $isRuletrue['istrue'];
                             }
                         }
@@ -1284,7 +1353,10 @@ class ShippingRuleController extends Controller
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $categoriesProducts, $formatReq, $connectionSettings);
                 }
             }
-            return $istrue;
+             return [
+                'istrue' => $istrue,
+                'filterProducts' => $filterCategories,
+            ];
         }
         return false;
     }
@@ -1315,7 +1387,10 @@ class ShippingRuleController extends Controller
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterBrands, $formatReq, $connectionSettings);
                 }
             }
-            return $istrue;
+             return [
+                'istrue' => $istrue,
+                'filterProducts' => $filterBrands,
+            ];
         }
         return false;
     }
@@ -1333,7 +1408,8 @@ class ShippingRuleController extends Controller
      */
     public function applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces, &$formatReq = null, &$connectionSettings = null)
     {
-        $restrictedProducts = isset($rule['products']) ? $rule['products'] : [];
+        $settings = isset($rule['filter_settings']) ? json_decode($rule['filter_settings'], true) : [];
+        $restrictedProducts = isset($settings['filter_products']) ? $settings['filter_products'] : [];
         $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
         $istrue = false;
 

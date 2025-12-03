@@ -78,7 +78,7 @@ class GenerateRequestData
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray($origin, $destination, $lineItems, $formData, $storeData)
+    public function generateEnitureArray($origin, $destination, $lineItems, $formData, $storeData, $addressStatus)
     {
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /**
@@ -113,7 +113,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings, $this->destination, $formData, $storeData);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings, $this->destination, $formData, $storeData, $addressStatus);
         Log::info('Pass 2 ' . json_encode($this->connectionSettings));
         $this->storeDateTime = $this->getBCStoreDateTime();
 
@@ -2359,7 +2359,7 @@ class GenerateRequestData
      * checkRadStatus to check Rad plan if enabled and
      * **/
 
-    private function checkRadStatus($storeId, $address)
+    public function checkRadStatus($storeId, $address)
     {
         $hits = 1;
         $poBox = false;
@@ -2375,6 +2375,24 @@ class GenerateRequestData
             $poBox = isset($isSameDestination['is_pobox']) ? $isSameDestination['is_pobox'] : false;
         }
         return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus, $poBox);
+    }
+
+     public function checkAddressStatusForShippingRule($storeId, $address)
+    {
+        $hits = 1;
+        $poBox = false;
+        $smarty = new SmartyStreet();
+        $addressStatus = '';
+        $completeAddress = $smarty->set_address($address);
+        Log::info('Complete address ' . json_encode($completeAddress));
+        $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
+        Log::info('is same destination ' . json_encode($isSameDestination));
+        if (!empty($isSameDestination)) {
+            $hits = 0;
+            $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
+            $poBox = isset($isSameDestination['is_pobox']) ? $isSameDestination['is_pobox'] : false;
+        }
+        return $smarty->getSmartyResponseForShippingRule($storeId, $address, $hits, $addressStatus, $poBox);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)

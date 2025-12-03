@@ -61,7 +61,7 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false)
+    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false, $addressStatus)
     {
         $quoteSettings = $multiShipmentQuotes = [];
         $destination = $request['lineItemData']['destination'];
@@ -159,7 +159,7 @@ class Shipping
 
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
-        $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items'], $request, $storeData);
+        $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items'], $request, $storeData, $addressStatus);
 
         if (empty($resp)) {
             Log::info('Return 5 ' . json_encode($resp));
@@ -228,6 +228,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        // dd("quotes", $quotes, $requestArr);
         Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
@@ -266,7 +267,7 @@ class Shipping
             $freeRNL = true;
         }
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes, $request, $storeData);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes, $request, $storeData, $addressStatus);
         Log::info('fffqqqq>>>>>>>>>>>>>>>>>>>> finalQuotes on line 271' . json_encode([
             $finalQuotes
         ]));

@@ -65,6 +65,42 @@ class SmartyStreet
         return $addressStatus;
     }
 
+     public function getSmartyResponseForShippingRule($storeId, $address, $hits, $addressStatus, $poBox)
+    {
+        $radStatus = $this->consumeHits($storeId, $hits);
+        if (!$radStatus['status']) {
+            return "N";
+        }
+        self::$isPoBOX = $poBox ?? false;
+        self::$isStandAddress = $poBox ? false : true;
+        $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
+        self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
+
+        if ($storeId != null) {
+            $completeAddress = $this->set_address($address);
+            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus, self::$isPoBOX);
+        }
+
+        if ($addressStatus == "n") {
+            $addonSettings = DB::table('addon_settings')->select('addon_settings.value')
+                ->join('installed_addons', 'installed_addons.id', '=', 'addon_settings.installed_addon_id')
+                ->join('addons', 'addons.id', '=', 'installed_addons.addon_id')
+                ->where('installed_addons.store_id', $storeId)
+                ->where('addons.short_code', 'RAD')->first();
+            if (!empty($addonSettings)) {
+                $addonSettings = json_decode(($addonSettings->value))->unconfirmed_default ?? 1;
+                $addressStatus = ($addonSettings === 1) ? "r" : "c";
+            } else {
+                //default set address to residentials
+                $addressStatus = "r";
+            }
+        }
+        // $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';
+
+        return $addressStatus;
+    }
+
+
     private function consumeHits($storeId, $hits)
     {
         $PackageSubscriptionController = new PackageSubscriptionController();
