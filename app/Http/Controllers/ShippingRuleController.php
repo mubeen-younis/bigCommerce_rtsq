@@ -180,6 +180,7 @@ class ShippingRuleController extends Controller
                         switch ($rule['apply_to']) {
                             case 0: //Apply Shipments level
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
+                                dd("isRuletrue", $isRuletrue);
                                 break;
                             case 1: //Apply Cart level
                                 $isRuletrue = $this->overrideHideMethods($rule, $cartItems, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
@@ -599,10 +600,9 @@ class ShippingRuleController extends Controller
         } else {
             $isFilterQuantityCheck = true;
         }
-
         $isLocationFilter = $settings['isLocationFilter'];
-        if ($isLocationFilter && !empty($filterCountry)) {
-            if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince) && empty($postalCodes)) || ($isSameCountry && $isSameState && $isSamePostalCode && !empty($stateProvince) && !empty($postalCodes)) || !empty($postalCodes) && $isSamePostalCode) {
+        if ($isLocationFilter && (!empty($filterCountry) || !empty($postalCodes))) {
+            if (($isSameCountry && empty($statesCode)) || ($isSameCountry && $isSameState && empty($postalCodes)) || ($isSameCountry && $isSameState && $isSamePostalCode) || !empty($postalCodes) && $isSamePostalCode && empty($filterCountry) && empty($stateProvince)) {
                 $isSameLocation = true;
             } else {
                 $isSameLocation = 2;
@@ -1062,6 +1062,7 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
+            // dd("categoriesResult", $categoriesResult);
             $products = $categoriesResult['filterProducts'];
             $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
@@ -1348,17 +1349,19 @@ class ShippingRuleController extends Controller
                 $categoriesProducts = collect($cartItems)->filter(function ($item) use ($categoryId) {
                     return in_array($categoryId, $item['categories_id']);
                 })->toArray() ?? [];
-
-                if (!empty($categoriesProducts)) {
-                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $categoriesProducts, $formatReq, $connectionSettings);
-                }
             }
-             return [
-                'istrue' => $istrue,
-                'filterProducts' => $filterCategories,
-            ];
+
+            if (!empty($categoriesProducts)) {
+                return [
+                    'istrue' => true,
+                    'filterProducts' => $filterCategories,
+                ];
+            }
         }
-        return false;
+        return [
+            'istrue' => false,
+            'filterProducts' => [],
+        ];
     }
 
     /**
@@ -1382,17 +1385,18 @@ class ShippingRuleController extends Controller
             foreach ($restrictedBrands as $rpKey => $brandId) {
 
                 $filterBrands = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
-
-                if (!empty($filterBrands)) {
-                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterBrands, $formatReq, $connectionSettings);
-                }
             }
-             return [
-                'istrue' => $istrue,
-                'filterProducts' => $filterBrands,
-            ];
+            if (!empty($filterBrands)) {
+                return [
+                    'istrue' => true,
+                    'filterProducts' => $filterBrands,
+                ];
+            }
         }
-        return false;
+        return [
+            'istrue' => false,
+            'filterProducts' => [],
+        ];
     }
 
     /**
@@ -1418,16 +1422,18 @@ class ShippingRuleController extends Controller
             foreach ($restrictedProducts as $rpKey => $productId) {
 
                 $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
-                if (!empty($filterProducts)) {
-                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts, $formatReq, $connectionSettings);
-                }
             }
-            return [
-                'istrue' => $istrue,
-                'filterProducts' => $filterProducts,
-            ];
+            if (!empty($filterProducts)) {
+                return [
+                    'istrue' => true,
+                    'filterProducts' => $filterProducts,
+                ];
+            }
         }
-        return false;
+        return [
+            'istrue' => false,
+            'filterProducts' => [],
+        ];
     }
 
     /**

@@ -100,7 +100,7 @@ class Shipping
         $itemsWithFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', true)->all();
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', false)->all();
-        
+
         $originsWithoutFreeShipping = $this->getOriginsAccShipGroup($itemsWithoutFreeShipping, $origins);
         // Items that is associated with Free Shipping
         $originsWithFreeShipping = $this->getOriginsAccShipGroup($itemsWithFreeShipping, $origins);
@@ -228,7 +228,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd("quotes", $quotes, $requestArr);
+        // dd("requestArr", $requestArr, $quotes);
         Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
@@ -268,6 +268,39 @@ class Shipping
         }
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes, $request, $storeData, $addressStatus);
+        // dd("finalQuotes", $finalQuotes);
+        // Get shipping rules for the store
+        $shippingRules = ShippingRule::getStoreShippingRules($store_id);
+        foreach ($shippingRules as $rule) {
+            if ($rule['rule_type'] == 11 && $rule['available'] == 1) {
+
+                // Checking Carriers for Cheapest Rate Rule
+                $carriersInReq = $requestArr['requestArr']['carriers'];
+                // Total carriers count
+                $totalCarriers = count($carriersInReq) ?? 0;
+
+                // Arrays to store LTL and Small carriers
+                $ltlCarriers = [];
+                $smallCarriers = [];
+
+                // Loop through carriers and categorize
+                foreach ($carriersInReq as $carrierName => $carrierData) {
+                    // dd("carrierName", $carrierName, $carrierData);
+                    if (isset($carrierData['quotestType'])) {
+                        if ($carrierData['quotestType'] === 'ltl') {
+                            $ltlCarriers[$carrierName] = $carrierData;
+                            $totalLtlCarrier = count($ltlCarriers);
+                        } elseif ($carrierData['quotestType'] === 'small') {
+                            $smallCarriers[$carrierName] = $carrierData;
+                            $totalSmallCarrier = count($smallCarriers);
+                        }
+                    }
+                }
+
+                $finalQuotes = $this->applyCheapestShippingRule($finalQuotes, $rule, $totalCarriers, $totalLtlCarrier, $totalSmallCarrier, $carriersInReq);
+            }
+        }
+        // dd("finalQuotes", $finalQuotes);
         Log::info('fffqqqq>>>>>>>>>>>>>>>>>>>> finalQuotes on line 271' . json_encode([
             $finalQuotes
         ]));
@@ -290,15 +323,41 @@ class Shipping
             $multiShipmentQuotes = $flatRate['multiShipmentQuotes'];
         }
         $finalQuotes = $this->addRateId($finalQuotes);
+
+        // Initialize applied_rule tracking for each quote
+        foreach ($finalQuotes as &$quote) {
+            if (!isset($quote['applied_rule'])) {
+                $quote['applied_rule'] = null;
+            }
+        }
+        unset($quote);
+
         Log::info('////////////// finalQuotes on line 290' . json_encode([
             $finalQuotes
         ]));
+
+        // Apply cheapest carrier rule if rule type 11 is active
+        Log::info('====== BEFORE applyCheapestCarrierRule ======');
+        Log::info('Total quotes: ' . count($finalQuotes));
+        foreach ($finalQuotes as $quote) {
+            Log::info('Quote: ' . ($quote['code'] ?? 'NO_CODE') . ' | Rate: ' . ($quote['rate'] ?? 'NO_RATE') . ' | Title: ' . ($quote['title'] ?? 'NO_TITLE'));
+        }
+        Log::info('==========================================');
+
+        $finalQuotes = $this->applyCheapestCarrierRule($finalQuotes, $shippingRules);
+
+        Log::info('====== AFTER applyCheapestCarrierRule ======');
+        Log::info('Total quotes: ' . count($finalQuotes));
+        foreach ($finalQuotes as $quote) {
+            Log::info('Quote: ' . ($quote['code'] ?? 'NO_CODE') . ' | Rate: ' . ($quote['rate'] ?? 'NO_RATE') . ' | Title: ' . ($quote['title'] ?? 'NO_TITLE'));
+        }
+        Log::info('==========================================');
+
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
 
-         Log::info('resppppp>>>>>>>>>>>>>>>>>>>> resp on line 298' . json_encode([
+        Log::info('resppppp>>>>>>>>>>>>>>>>>>>> resp on line 298' . json_encode([
             $finalQuotes
         ]));
-
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -999,13 +1058,20 @@ class Shipping
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
-                $resp['carrier_quotes'][0]['quotes'][$key] = [
+                $quoteData = [
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
                 ];
+
+                // Add applied_rule if it exists
+                if (!empty($quote['applied_rule'])) {
+                    $quoteData['applied_rule'] = $quote['applied_rule'];
+                }
+
+                $resp['carrier_quotes'][0]['quotes'][$key] = $quoteData;
             }
         } else {
             $resp = [];
@@ -1218,5 +1284,533 @@ class Shipping
     ) {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'shipEngine'];
         return in_array($carrier, $smallCarriers);
+    }
+
+    /**
+     * Apply cheapest carrier rule (rule type 11)
+     * Filters quotes to show only the cheapest carrier when rule type 11 is active
+     *
+     * @param array $finalQuotes
+     * @param array $shippingRules
+     * @return array
+     */
+    private function applyCheapestCarrierRule($finalQuotes, $shippingRules)
+    {
+        if (empty($finalQuotes) || empty($shippingRules)) {
+            return $finalQuotes;
+        }
+
+        // Check if shipping rule type 11 (cheapest carrier rule) is active and available
+        $cheapestCarrierRuleActive = false;
+        $applyToProviders = 'ltl_and_parcel'; // Default value
+        $activeRule = null; // Store the active rule for tracking
+        foreach ($shippingRules as $rule) {
+            if (isset($rule['rule_type']) && $rule['rule_type'] == 11 && isset($rule['available']) && $rule['available'] == 1) {
+                $cheapestCarrierRuleActive = true;
+                $applyToProviders = $rule['apply_to_providers'] ?? 'ltl_and_parcel';
+                $activeRule = $rule; // Store rule details
+                break;
+            }
+        }
+
+        if (!$cheapestCarrierRuleActive) {
+            Log::info('Cheapest carrier rule (type 11) is not active');
+            return $finalQuotes;
+        }
+
+        Log::info('Cheapest carrier rule (type 11) is active with provider type: ' . $applyToProviders);
+        Log::info('Total quotes before applying rule: ' . count($finalQuotes));
+
+        // Special handling for "LTL and parcel providers" - show cheapest from BOTH types
+        if ($applyToProviders === 'ltl_and_parcel') {
+            Log::info('Applying ltl_and_parcel logic - will return cheapest LTL carrier AND cheapest Parcel carrier');
+            return $this->getCheapestLtlAndParcel($finalQuotes, $activeRule);
+        }
+
+        // Filter quotes based on provider type selection and find cheapest carrier
+        Log::info('Applying provider type filter: ' . $applyToProviders);
+        $filteredQuotes = $this->filterQuotesByProviderType($finalQuotes, $applyToProviders, $activeRule);
+
+        if (empty($filteredQuotes)) {
+            Log::info('No quotes found matching the provider type filter: ' . $applyToProviders);
+            return $finalQuotes;
+        }
+
+        Log::info('Final filtered quotes count after applying cheapest carrier rule: ' . count($filteredQuotes));
+        return $filteredQuotes;
+    }
+
+    /**
+     * Filter quotes by provider type (LTL, Parcel, or both)
+     *
+     * @param array $quotes
+     * @param string $providerType Options: 'ltl', 'parcel', 'cheapest_ltl_or_parcel'
+     * @param array $activeRule The active shipping rule for tracking
+     * @return array
+     */
+    private function filterQuotesByProviderType($quotes, $providerType, $activeRule = null)
+    {
+        if ($providerType === 'cheapest_ltl_or_parcel') {
+            // Find cheapest from LTL and cheapest from Parcel, then compare and return ALL quotes from the cheaper type
+            return $this->getCheapestLtlOrParcel($quotes, $activeRule);
+        }
+
+        // Filter by specific provider type (ltl or parcel) and find cheapest carrier
+        $filteredQuotes = [];
+        foreach ($quotes as $quote) {
+            if (!isset($quote['code'])) {
+                continue;
+            }
+
+            $isSmall = $this->isQuoteFromSmallCarrier($quote['code']);
+            $isLtl = $this->isQuoteFromLtlCarrier($quote['code']);
+
+            if ($providerType === 'parcel' && $isSmall) {
+                $filteredQuotes[] = $quote;
+            } elseif ($providerType === 'ltl' && $isLtl) {
+                $filteredQuotes[] = $quote;
+            }
+        }
+
+        Log::info("Filtered quotes by provider type '{$providerType}': " . count($filteredQuotes) . ' quotes');
+
+        // Now find the cheapest carrier from the filtered quotes
+        if (empty($filteredQuotes)) {
+            return $filteredQuotes;
+        }
+
+        // Group filtered quotes by carrier
+        $carrierGroups = [];
+        foreach ($filteredQuotes as $quote) {
+            if (!isset($quote['rate'])) {
+                continue;
+            }
+
+            $carrierCode = $this->extractCarrierFromCode($quote['code']);
+            if (!isset($carrierGroups[$carrierCode])) {
+                $carrierGroups[$carrierCode] = [];
+            }
+            $carrierGroups[$carrierCode][] = $quote;
+        }
+
+        // If only one carrier, return all its quotes
+        if (count($carrierGroups) <= 1) {
+            foreach ($filteredQuotes as &$quote) {
+                $quote['applied_rule'] = $activeRule['rule_name'] ?? 'Cheapest Carrier Rule (Type 11)';
+            }
+            unset($quote);
+            return $filteredQuotes;
+        }
+
+        // Find the cheapest carrier
+        $cheapestCarrierCode = null;
+        $cheapestRate = PHP_FLOAT_MAX;
+
+        foreach ($carrierGroups as $carrierCode => $carrierQuotes) {
+            $minRate = PHP_FLOAT_MAX;
+            foreach ($carrierQuotes as $quote) {
+                $rate = floatval($quote['rate']);
+                if ($rate < $minRate) {
+                    $minRate = $rate;
+                }
+            }
+
+            if ($minRate < $cheapestRate) {
+                $cheapestRate = $minRate;
+                $cheapestCarrierCode = $carrierCode;
+            }
+        }
+
+        Log::info("Cheapest {$providerType} carrier: {$cheapestCarrierCode} with minimum rate: {$cheapestRate}");
+
+        // Return only quotes from the cheapest carrier
+        if ($cheapestCarrierCode !== null && isset($carrierGroups[$cheapestCarrierCode])) {
+            $result = $carrierGroups[$cheapestCarrierCode];
+
+            // Add rule info to each quote
+            foreach ($result as &$quote) {
+                $quote['applied_rule'] = $activeRule['rule_name'] ?? 'Cheapest Carrier Rule (Type 11)';
+            }
+            unset($quote);
+
+            return $result;
+        }
+
+        return $filteredQuotes;
+    }
+
+    /**
+     * Get cheapest LTL carrier AND cheapest Parcel carrier (both)
+     * Returns quotes from the cheapest LTL carrier + quotes from the cheapest Parcel carrier
+     *
+     * @param array $quotes
+     * @param array $activeRule The active shipping rule for tracking
+     * @return array
+     */
+    private function getCheapestLtlAndParcel($quotes, $activeRule = null)
+    {
+        Log::info('===== getCheapestLtlAndParcel START =====');
+        Log::info('Total input quotes: ' . count($quotes));
+
+        $ltlQuotes = [];
+        $parcelQuotes = [];
+
+        // Separate quotes by type
+        foreach ($quotes as $quote) {
+            if (!isset($quote['code']) || !isset($quote['rate'])) {
+                Log::info('Skipping quote - missing code or rate');
+                continue;
+            }
+
+            $isSmall = $this->isQuoteFromSmallCarrier($quote['code']);
+            $isLtl = $this->isQuoteFromLtlCarrier($quote['code']);
+
+            Log::info('Quote: ' . $quote['code'] . ' | Rate: ' . $quote['rate'] . ' | isSmall: ' . ($isSmall ? 'YES' : 'NO') . ' | isLTL: ' . ($isLtl ? 'YES' : 'NO'));
+
+            if ($isSmall) {
+                $parcelQuotes[] = $quote;
+            } elseif ($isLtl) {
+                $ltlQuotes[] = $quote;
+            }
+        }
+
+        Log::info('Separated quotes - LTL: ' . count($ltlQuotes) . ' | Parcel: ' . count($parcelQuotes));
+
+        // Group LTL quotes by carrier and find cheapest LTL carrier
+        $ltlCarrierGroups = [];
+        foreach ($ltlQuotes as $quote) {
+            $carrierCode = $this->extractCarrierFromCode($quote['code']);
+            if (!isset($ltlCarrierGroups[$carrierCode])) {
+                $ltlCarrierGroups[$carrierCode] = [];
+            }
+            $ltlCarrierGroups[$carrierCode][] = $quote;
+        }
+
+        $cheapestLtlCarrier = null;
+        $cheapestLtlRate = PHP_FLOAT_MAX;
+        foreach ($ltlCarrierGroups as $carrierCode => $carrierQuotes) {
+            $minRate = PHP_FLOAT_MAX;
+            foreach ($carrierQuotes as $quote) {
+                $rate = floatval($quote['rate']);
+                if ($rate < $minRate) {
+                    $minRate = $rate;
+                }
+            }
+            if ($minRate < $cheapestLtlRate) {
+                $cheapestLtlRate = $minRate;
+                $cheapestLtlCarrier = $carrierCode;
+            }
+        }
+
+        // Group Parcel quotes by carrier and find cheapest Parcel carrier
+        $parcelCarrierGroups = [];
+        foreach ($parcelQuotes as $quote) {
+            $carrierCode = $this->extractCarrierFromCode($quote['code']);
+            if (!isset($parcelCarrierGroups[$carrierCode])) {
+                $parcelCarrierGroups[$carrierCode] = [];
+            }
+            $parcelCarrierGroups[$carrierCode][] = $quote;
+        }
+
+        $cheapestParcelCarrier = null;
+        $cheapestParcelRate = PHP_FLOAT_MAX;
+        foreach ($parcelCarrierGroups as $carrierCode => $carrierQuotes) {
+            $minRate = PHP_FLOAT_MAX;
+            foreach ($carrierQuotes as $quote) {
+                $rate = floatval($quote['rate']);
+                if ($rate < $minRate) {
+                    $minRate = $rate;
+                }
+            }
+            if ($minRate < $cheapestParcelRate) {
+                $cheapestParcelRate = $minRate;
+                $cheapestParcelCarrier = $carrierCode;
+            }
+        }
+
+        // Combine quotes from both cheapest carriers
+        $combinedQuotes = [];
+
+        Log::info('LTL Carrier Groups found: ' . count($ltlCarrierGroups) . ' | Parcel Carrier Groups found: ' . count($parcelCarrierGroups));
+
+        if ($cheapestLtlCarrier !== null && isset($ltlCarrierGroups[$cheapestLtlCarrier])) {
+            $ltlQuotesCount = count($ltlCarrierGroups[$cheapestLtlCarrier]);
+            $combinedQuotes = array_merge($combinedQuotes, $ltlCarrierGroups[$cheapestLtlCarrier]);
+            Log::info("✓ Adding Cheapest LTL carrier: {$cheapestLtlCarrier} with minimum rate: {$cheapestLtlRate} ({$ltlQuotesCount} quotes)");
+        } else {
+            Log::info("✗ No LTL carrier found to add");
+        }
+
+        if ($cheapestParcelCarrier !== null && isset($parcelCarrierGroups[$cheapestParcelCarrier])) {
+            $parcelQuotesCount = count($parcelCarrierGroups[$cheapestParcelCarrier]);
+            $combinedQuotes = array_merge($combinedQuotes, $parcelCarrierGroups[$cheapestParcelCarrier]);
+            Log::info("✓ Adding Cheapest Parcel carrier: {$cheapestParcelCarrier} with minimum rate: {$cheapestParcelRate} ({$parcelQuotesCount} quotes)");
+        } else {
+            Log::info("✗ No Parcel carrier found to add");
+        }
+
+        if (!empty($combinedQuotes)) {
+            Log::info("LTL and Parcel: Returning " . count($combinedQuotes) . " quotes from both cheapest carriers");
+
+            // Add rule info to each quote
+            foreach ($combinedQuotes as &$quote) {
+                $quote['applied_rule'] = $activeRule['rule_name'] ?? 'Cheapest Carrier Rule (Type 11)';
+            }
+            unset($quote);
+
+            Log::info('===== getCheapestLtlAndParcel END - SUCCESS =====');
+            return $combinedQuotes;
+        }
+
+        // If no LTL or Parcel quotes found, return all quotes
+        Log::info('===== getCheapestLtlAndParcel END - FALLBACK (returning all quotes) =====');
+        return $quotes;
+    }
+
+    /**
+     * Get cheapest LTL or Parcel quotes (whichever TYPE is cheaper overall)
+     * Compares cheapest LTL rate vs cheapest Parcel rate
+     * Returns ALL quotes from whichever TYPE has the cheaper minimum rate
+     *
+     * @param array $quotes
+     * @param array $activeRule The active shipping rule for tracking
+     * @return array
+     */
+    private function getCheapestLtlOrParcel($quotes, $activeRule = null)
+    {
+        $ltlQuotes = [];
+        $parcelQuotes = [];
+
+        // Separate quotes by type
+        foreach ($quotes as $quote) {
+            if (!isset($quote['code']) || !isset($quote['rate'])) {
+                continue;
+            }
+
+            if ($this->isQuoteFromSmallCarrier($quote['code'])) {
+                $parcelQuotes[] = $quote;
+            } elseif ($this->isQuoteFromLtlCarrier($quote['code'])) {
+                $ltlQuotes[] = $quote;
+            }
+        }
+
+        // Find cheapest rate from each type
+        $cheapestLtl = PHP_FLOAT_MAX;
+        $cheapestParcel = PHP_FLOAT_MAX;
+
+        foreach ($ltlQuotes as $quote) {
+            $rate = floatval($quote['rate']);
+            if ($rate < $cheapestLtl) {
+                $cheapestLtl = $rate;
+            }
+        }
+
+        foreach ($parcelQuotes as $quote) {
+            $rate = floatval($quote['rate']);
+            if ($rate < $cheapestParcel) {
+                $cheapestParcel = $rate;
+            }
+        }
+
+        // Return ALL quotes from the cheaper type
+        if ($cheapestLtl < $cheapestParcel) {
+            Log::info("Cheapest LTL rate ({$cheapestLtl}) is cheaper than Parcel ({$cheapestParcel}), returning ALL LTL quotes");
+
+            // Add rule info to each quote
+            foreach ($ltlQuotes as &$quote) {
+                $quote['applied_rule'] = $activeRule['rule_name'] ?? 'Cheapest Carrier Rule (Type 11)';
+            }
+            unset($quote);
+
+            return $ltlQuotes;
+        } else if ($cheapestParcel < PHP_FLOAT_MAX) {
+            Log::info("Cheapest Parcel rate ({$cheapestParcel}) is cheaper than or equal to LTL ({$cheapestLtl}), returning ALL Parcel quotes");
+
+            // Add rule info to each quote
+            foreach ($parcelQuotes as &$quote) {
+                $quote['applied_rule'] = $activeRule['rule_name'] ?? 'Cheapest Carrier Rule (Type 11)';
+            }
+            unset($quote);
+
+            return $parcelQuotes;
+        }
+
+        // If neither has valid quotes, return all
+        return $quotes;
+    }
+
+    /**
+     * Check if quote is from a small/parcel carrier based on code
+     *
+     * @param string $code
+     * @return bool
+     */
+    private function isQuoteFromSmallCarrier($code)
+    {
+        // Check if code contains parcel pattern
+        if (strpos($code, 'parcel_') !== false) {
+            return true;
+        }
+
+        // Check against small carrier codes
+        $smallCarrierPatterns = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps', 'purolator', 'shipEngine'];
+        foreach ($smallCarrierPatterns as $pattern) {
+            if (strpos($code, $pattern) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if quote is from an LTL carrier based on code
+     *
+     * @param string $code
+     * @return bool
+     */
+    private function isQuoteFromLtlCarrier($code)
+    {
+        // Check if code contains ltl pattern
+        if (strpos($code, 'ltl_') !== false || strpos($code, 'LTL') !== false) {
+            return true;
+        }
+
+        // Check against LTL carrier codes
+        $ltlCarrierPatterns = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'xpoLTL', 'rnlLTL', 'yrcLTL', 'odfl', 'abf', 'saia', 'estes'];
+        foreach ($ltlCarrierPatterns as $pattern) {
+            if (stripos($code, $pattern) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Extract carrier identifier from quote code
+     * Examples: 'parcel_12fdPexYl+R+gd' -> 'fd' (Fedex), 'parcel_12ups01+R' -> 'ups'
+     *
+     * @param string $code
+     * @return string
+     */
+    private function extractCarrierFromCode($code)
+    {
+        // Handle special codes
+        if ($code === 'shippingRule' || $code === 'flatRateRule') {
+            return $code;
+        }
+
+        // Handle Multi+ codes (multi-shipment)
+        if (strpos($code, 'Multi+') !== false) {
+            return 'multi_shipment';
+        }
+
+        // For parcel codes like 'parcel_12fdPexYl+R+gd' or 'parcel_12ups01+R'
+        // Extract the carrier identifier after 'parcel_12'
+        if (preg_match('/parcel_\d+([a-z]+)/i', $code, $matches)) {
+            // Returns 'fd' for Fedex, 'ups' for UPS, etc.
+            return strtolower($matches[1]);
+        }
+
+        // For LTL codes or other patterns
+        if (preg_match('/^([a-zA-Z]+)_/', $code, $matches)) {
+            return strtolower($matches[1]);
+        }
+
+        // Fallback: use the whole code as carrier identifier
+        return $code;
+    }
+
+    public function applyCheapestShippingRule($finalQuotes, $rule, $totalCarriers, $totalLtlCarrier, $totalSmallCarrier, $carriersInReq)
+    {
+        // dd("finalQuotes", $finalQuotes);
+        // -------------------------
+        $cheapestCarrierQuotes = $finalQuotes;
+        $cheapestLTLCarrierQuotes = [];
+        $cheapestSmallCarrierQuotes = [];
+        $ltlGroups = [];
+        $smallGroups = [];
+        // 1. Group by carrier prefix (before "ltl")
+        if (!($rule['cheapest_rate_for_carriers'] == 2)) {
+            foreach ($finalQuotes as $quote) {
+                if (preg_match('/^(.*?ltl)/', $quote['code'], $match)) {
+                    $carrierKey = $match[1];
+                    $ltlGroups[$carrierKey][] = $quote;
+                }
+            }
+            // 2. Find cheapest rate per carrier
+            $carrierMinRates = [];
+            foreach ($ltlGroups as $carrier => $quotes) {
+                $minRate = max(array_column($quotes, 'rate'));
+                $carrierMinRates[$carrier] = $minRate;
+            }
+            // 3. Find carrier with overall cheapest rate
+            if (!empty($ltlGroups)) {
+                $cheapestCarrier = array_keys($carrierMinRates, min($carrierMinRates))[0] ?? [];
+                // 4. Return only that carrier's quotes
+                $cheapestLTLCarrierQuotes = $ltlGroups[$cheapestCarrier];
+            }
+
+            if (($rule['cheapest_rate_for_carriers'] == 1 && $totalLtlCarrier > 1)) {
+                $cheapestCarrierQuotes = $cheapestLTLCarrierQuotes;
+            }
+        }
+
+        // Small Carriers
+        if (!($rule['cheapest_rate_for_carriers'] == 1)) {
+            foreach ($finalQuotes as $quote) {
+
+                // preg_match('/^\S+/', $quote['title'], $match);
+                // $carrierKey = $match[0];
+                if (preg_match('/^(parcel_12..)/', $quote['code'], $match)) {
+                    $carrierKey = $match[1];
+                    $smallGroups[$carrierKey][] = $quote;
+                }
+            }
+            // 2. Find cheapest rate per carrier
+            $carrierMinRates = [];
+            foreach ($smallGroups as $carrier => $quotes) {
+                $minRate = max(array_column($quotes, 'rate'));
+                $carrierMinRates[$carrier] = $minRate;
+            }
+            // 3. Find carrier with overall cheapest rate
+            $cheapestCarrier = array_keys($carrierMinRates, min($carrierMinRates))[0];
+
+            // 4. Return only that carrier's quotes
+            $cheapestSmallCarrierQuotes = $smallGroups[$cheapestCarrier];
+
+            if (($rule['cheapest_rate_for_carriers'] == 2 && $totalSmallCarrier > 1)) {
+                $cheapestCarrierQuotes = $cheapestSmallCarrierQuotes;
+            }
+        }
+        // LTL and Small Carrier Cheapest Rate
+        if (($rule['cheapest_rate_for_carriers'] == 3 && $totalSmallCarrier >= 1 && $totalLtlCarrier >= 1)) {
+            $cheapestCarrierQuotes =  array_merge($cheapestLTLCarrierQuotes, $cheapestSmallCarrierQuotes);
+        }
+        // dd("cheapestSmallCarrierQuotes", $cheapestSmallCarrierQuotes, $cheapestLTLCarrierQuotes);
+
+        // LTL or Small Carrier Cheapest Rate
+        if (($rule['cheapest_rate_for_carriers'] == 4 && $totalSmallCarrier >= 1 && $totalLtlCarrier >= 1)) {
+            // Highest rate from small carriers
+            if (!empty($cheapestLTLCarrierQuotes) && !empty($cheapestSmallCarrierQuotes)) {
+
+                $highestSmall = max(array_column($cheapestSmallCarrierQuotes, 'rate'));
+
+                // Highest rate from LTL carriers
+                $highestLTL = max(array_column($cheapestLTLCarrierQuotes, 'rate'));
+
+                if ($highestSmall < $highestLTL) {
+                    $cheapestCarrierQuotes = $cheapestSmallCarrierQuotes;
+                }
+
+                if ($highestSmall > $highestLTL) {
+                    $cheapestCarrierQuotes = $cheapestLTLCarrierQuotes;
+                }
+            }
+        }
+// dd("cheapestCarrierQuotes", $cheapestCarrierQuotes);
+        return $cheapestCarrierQuotes;
+        // ------------------------
     }
 }

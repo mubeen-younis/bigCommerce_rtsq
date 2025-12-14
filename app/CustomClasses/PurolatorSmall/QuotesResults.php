@@ -258,7 +258,7 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
-        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround', 'PurolatorGroundU.S.'];
+        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround', 'PurolatorGroundU.S.'] ?? [];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
 
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
@@ -273,7 +273,7 @@ class QuotesResults
     private function formateQuoteBeforeCompile($shipments,$connectionSettings)
     {
         $checkedshipment = [];
-        $carrier_services = $connectionSettings['purolator-small']['quote_settings']['carrier_services'];
+        $carrier_services = $connectionSettings['purolator-small']['quote_settings']['carrier_services'] ?? [];
 
         foreach ($shipments as $shipkey => $quote) {
 

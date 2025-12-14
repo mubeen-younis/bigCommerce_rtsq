@@ -379,6 +379,13 @@ class ShippingRule extends Model
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
+                case 11:
+                    $settings = [
+                        "cheapest_rate_for_carriers" => $shippingRuleData['cheapest_rate_for_carriers'] ?? false,
+                        "apply_to_providers" => $shippingRuleData['apply_to_providers'] ?? 'ltl_and_parcel', // Options: ltl, parcel, ltl_and_parcel, cheapest_ltl_or_parcel
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
             }
 
             $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
@@ -518,6 +525,9 @@ class ShippingRule extends Model
             case 10:
                 $shippingRule = self::updateFlatShippingPriceParams($shippingRule);
                 break;
+            case 11:
+                $shippingRule = self::updateCheapestShippingPriceParams($shippingRule);
+                break;
             default:
                 break;
         }
@@ -566,7 +576,7 @@ class ShippingRule extends Model
         // $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
         // $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
-         $shippingRule['filter_provider'] = $shippingRule['filter_name'] ?? '';
+        $shippingRule['filter_provider'] = $shippingRule['filter_name'] ?? '';
         $settings = json_decode($shippingRule['filter_settings'], true);
         $shippingRule['isFilterWeight'] = $settings['isFilterWeight'] ?? false;
         $shippingRule['isFilterPrice'] = $settings['isFilterPrice'] ?? false;
@@ -711,6 +721,15 @@ class ShippingRule extends Model
 
         return $shippingRule;
     }
+
+     public static function updateCheapestShippingPriceParams($shippingRule)
+    {
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['cheapest_rate_for_carriers'] = $settings['cheapest_rate_for_carriers'] ?? 1;
+        $shippingRule['apply_to_providers'] = $settings['apply_to_providers'] ?? 'ltl_and_parcel';
+        return $shippingRule;
+    }
+
 
     public static function updateRestrictfilterPostalCodeParams($shippingRule)
     {
