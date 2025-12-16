@@ -228,7 +228,6 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd("requestArr", $requestArr, $quotes);
         Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
@@ -268,7 +267,6 @@ class Shipping
         }
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes, $request, $storeData, $addressStatus);
-        // dd("finalQuotes", $finalQuotes);
         // Get shipping rules for the store
         $shippingRules = ShippingRule::getStoreShippingRules($store_id);
         foreach ($shippingRules as $rule) {
@@ -285,7 +283,6 @@ class Shipping
 
                 // Loop through carriers and categorize
                 foreach ($carriersInReq as $carrierName => $carrierData) {
-                    // dd("carrierName", $carrierName, $carrierData);
                     if (isset($carrierData['quotestType'])) {
                         if ($carrierData['quotestType'] === 'ltl') {
                             $ltlCarriers[$carrierName] = $carrierData;
@@ -300,7 +297,6 @@ class Shipping
                 $finalQuotes = $this->applyCheapestShippingRule($finalQuotes, $rule, $totalCarriers, $totalLtlCarrier, $totalSmallCarrier, $carriersInReq);
             }
         }
-        // dd("finalQuotes", $finalQuotes);
         Log::info('fffqqqq>>>>>>>>>>>>>>>>>>>> finalQuotes on line 271' . json_encode([
             $finalQuotes
         ]));
@@ -1724,7 +1720,6 @@ class Shipping
 
     public function applyCheapestShippingRule($finalQuotes, $rule, $totalCarriers, $totalLtlCarrier, $totalSmallCarrier, $carriersInReq)
     {
-        // dd("finalQuotes", $finalQuotes);
         // -------------------------
         $cheapestCarrierQuotes = $finalQuotes;
         $cheapestLTLCarrierQuotes = [];
@@ -1788,7 +1783,6 @@ class Shipping
         if (($rule['cheapest_rate_for_carriers'] == 3 && $totalSmallCarrier >= 1 && $totalLtlCarrier >= 1)) {
             $cheapestCarrierQuotes =  array_merge($cheapestLTLCarrierQuotes, $cheapestSmallCarrierQuotes);
         }
-        // dd("cheapestSmallCarrierQuotes", $cheapestSmallCarrierQuotes, $cheapestLTLCarrierQuotes);
 
         // LTL or Small Carrier Cheapest Rate
         if (($rule['cheapest_rate_for_carriers'] == 4 && $totalSmallCarrier >= 1 && $totalLtlCarrier >= 1)) {
@@ -1809,7 +1803,6 @@ class Shipping
                 }
             }
         }
-// dd("cheapestCarrierQuotes", $cheapestCarrierQuotes);
         return $cheapestCarrierQuotes;
         // ------------------------
     }

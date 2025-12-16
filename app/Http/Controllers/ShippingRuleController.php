@@ -180,7 +180,6 @@ class ShippingRuleController extends Controller
                         switch ($rule['apply_to']) {
                             case 0: //Apply Shipments level
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
-                                dd("isRuletrue", $isRuletrue);
                                 break;
                             case 1: //Apply Cart level
                                 $isRuletrue = $this->overrideHideMethods($rule, $cartItems, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
@@ -642,7 +641,6 @@ class ShippingRuleController extends Controller
 
         // Is Address Type Filter
         if ($isAddressType === true) {
-            // dd("qwwee", $isAddressType, $addressStatus, $selectedAddressType);
             if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
                 $addressTypeResult = true;
             } else {
@@ -855,11 +853,33 @@ class ShippingRuleController extends Controller
         $isSameCountry = (!empty($filterCountry) && in_array($destination['country'], $filterCountry));
         $isSameState   = (!empty($statesCode) && in_array($destination['state'], $statesCode));
 
+        // --- Collect variants for this shipment key ---
+        if (!empty($allOrigins)) {
+            $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
+                return $origin['locationId'] == $shipmentKey;
+            })->keys()->all() ?? [];
+        }
+
+        // --- Totals ---
+        if (!empty($variants)) {
+            foreach ($variants as $variantId) {
+                if (isset($items[$variantId])) {
+                    $item = $items[$variantId];
+                    $qty  = $item['piecesOfLineItem'] ?? 0;
+
+                    $totalWeight   += ($item['lineItemWeight'] ?? 0) * $qty;
+                    $totalPrice    += ($item['lineItemPrice'] ?? 0) * $qty;
+                    $totalQuantity += $qty;
+                }
+            }
+        }
+
+
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
-            $totalWeight = collect($weight)->sum();
+            // $totalWeight = collect($weight)->sum();
             if (isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')) {
                 $isFilterWeight = true;
             } else {
@@ -872,7 +892,7 @@ class ShippingRuleController extends Controller
             $price = collect($items)->map(function ($item) {
                 return $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
-            $totalPrice = collect($price)->sum() ?? 0;
+            // $totalPrice = collect($price)->sum() ?? 0;
             if (isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')) {
                 $isFilterPrice = true;
             } else {
@@ -882,7 +902,7 @@ class ShippingRuleController extends Controller
             $isFilterPriceCheck = true;
         }
         if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-            $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+            // $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
                 $isFilterQuantity = true;
             } else {
@@ -1010,11 +1030,33 @@ class ShippingRuleController extends Controller
         $products = [];
 
 
+         // --- Collect variants for this shipment key ---
+        if (!empty($allOrigins)) {
+            $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
+                return $origin['locationId'] == $shipmentKey;
+            })->keys()->all() ?? [];
+        }
+
+        // --- Totals ---
+        if (!empty($variants)) {
+            foreach ($variants as $variantId) {
+                if (isset($items[$variantId])) {
+                    $item = $items[$variantId];
+                    $qty  = $item['piecesOfLineItem'] ?? 0;
+
+                    $totalWeight   += ($item['lineItemWeight'] ?? 0) * $qty;
+                    $totalPrice    += ($item['lineItemPrice'] ?? 0) * $qty;
+                    $totalQuantity += $qty;
+                }
+            }
+        }
+
+
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
-            $totalWeight = collect($weight)->sum();
+            // $totalWeight = collect($weight)->sum();
             if (isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')) {
                 $isFilterWeight = true;
             } else {
@@ -1027,7 +1069,7 @@ class ShippingRuleController extends Controller
             $price = collect($items)->map(function ($item) {
                 return $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
-            $totalPrice = collect($price)->sum() ?? 0;
+            // $totalPrice = collect($price)->sum() ?? 0;
             if (isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')) {
                 $isFilterPrice = true;
             } else {
@@ -1037,7 +1079,7 @@ class ShippingRuleController extends Controller
             $isFilterPriceCheck = true;
         }
         if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-            $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+            // $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
                 $isFilterQuantity = true;
             } else {
@@ -1062,7 +1104,6 @@ class ShippingRuleController extends Controller
         // Category, Brand and Product Check
         if ($isFilterCategory === true) {
             $categoriesResult = $this->applyRuleOnCategories($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
-            // dd("categoriesResult", $categoriesResult);
             $products = $categoriesResult['filterProducts'];
             $categoriesResult = $categoriesResult['istrue'];
             if ($categoriesResult === false) {
@@ -1095,7 +1136,6 @@ class ShippingRuleController extends Controller
 
         // Is Address Type Filter
         if ($isAddressType === true) {
-            // dd("qwwee", $isAddressType, $addressStatus, $selectedAddressType);
             if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
                 $addressTypeResult = true;
             } else {

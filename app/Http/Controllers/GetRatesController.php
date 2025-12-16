@@ -766,7 +766,6 @@ class GetRatesController extends Controller
         $this->applyRestrictOriginLocationsRule($storeId, $formatReq);
 
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
-        // dd("shippingRules", $shippingRules);
         if (!empty($shippingRules)) {
 
             $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
@@ -824,7 +823,6 @@ class GetRatesController extends Controller
                             if ($key == $provider) {
                                 $shippingRules = new ShippingRuleController();
                                 $isRuleTrue = $shippingRules->hideMethods($rule, $items, $destination, $formatReq, $storeData, $addressStatus);
-                                // dd("isRuleTrue", $isRuleTrue);
                                 if ($isRuleTrue === true) {
                                     return false;
                                 } else{
