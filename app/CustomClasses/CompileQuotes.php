@@ -4928,6 +4928,7 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         $hatShipments = $finalCompiledQuotes = $compiledQuotes = $originQuotes = [];
         foreach ($shipments as $origin => $quote) {
+            // dd($shipments, $origin, $quote);
             $this->originKey = $origin;
             $this->isSurchargeRates = false;
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {

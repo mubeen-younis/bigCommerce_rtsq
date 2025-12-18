@@ -1036,14 +1036,13 @@ class ShippingRuleController extends Controller
                 return $origin['locationId'] == $shipmentKey;
             })->keys()->all() ?? [];
         }
-
+// dd("variants", $variants, $allOrigins, $shipmentKey);
         // --- Totals ---
         if (!empty($variants)) {
             foreach ($variants as $variantId) {
                 if (isset($items[$variantId])) {
                     $item = $items[$variantId];
                     $qty  = $item['piecesOfLineItem'] ?? 0;
-
                     $totalWeight   += ($item['lineItemWeight'] ?? 0) * $qty;
                     $totalPrice    += ($item['lineItemPrice'] ?? 0) * $qty;
                     $totalQuantity += $qty;
@@ -1080,6 +1079,7 @@ class ShippingRuleController extends Controller
         }
         if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
             // $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+            // dd('totalQuantity',$totalQuantity,$shippingRule['quantity_from']);
             if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
                 $isFilterQuantity = true;
             } else {

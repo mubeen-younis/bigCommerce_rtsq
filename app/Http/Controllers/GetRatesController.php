@@ -85,7 +85,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
-        
+
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
@@ -104,7 +104,7 @@ class GetRatesController extends Controller
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $this->formatReq = $this->formatRequest($request->all(), $storeData);
-
+// dd("formatReq", $this->formatReq);
         if (
             $this->formatReq['lineItemData']['destination']['zip'] == null ||
             $this->formatReq['lineItemData']['destination']['country'] == null ||
@@ -350,7 +350,6 @@ class GetRatesController extends Controller
                 $variantKeys[$key] = $key;
 
                 // $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
-
                 $dropshipEnabled = $product_settings['dropship_enabled'] ?? false;
                 if ($dropshipEnabled) {
                     $originAddress = $this->shipmentPkg->getDropshipLocationDetail($product_settings['dropship_location'], $details['destination']['zip']);
@@ -418,6 +417,7 @@ class GetRatesController extends Controller
         }
         if ($wareHouseShipmentExist) {
             $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings, []);
+            // dd('originAddress', $originAddress);
             if (blank($originAddress)) {
                 Log::info('No warehouse added');
                 return null;
@@ -816,22 +816,21 @@ class GetRatesController extends Controller
                         $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
                         $originalDeliveryEstimate = $quoteSettings['delivery_estimate_options'];
                     }
-                  
+
                     // Show Methods
                     if ($rule['rule_type'] == self::RESTRICT_COUNTRY) {
                         foreach ($this->connectionSettings as $key => $carrier) {
                             if ($key == $provider) {
                                 $shippingRules = new ShippingRuleController();
                                 $isRuleTrue = $shippingRules->hideMethods($rule, $items, $destination, $formatReq, $storeData, $addressStatus);
-                                if ($isRuleTrue === true) {
+                                if ($isRuleTrue === false) {
                                     return false;
-                                } else{
-                                    return true;
+                                } else {
+                                    unset($this->connectionSettings[$key]);
                                 }
                             }
                         }
                     }
-
                     // Flat Shipping Rate Rule
                     if ($rule['rule_type'] == self::FLAT_RATE) {
                         // if all the rules are not valid then return true;
@@ -846,7 +845,6 @@ class GetRatesController extends Controller
                         $isCategoryRestriction = $this->applyHideDeliveryEstimatesRule($this->formatReq, $rule, $addressStatus);
                         $isRestriction = false;
                     }
-
                 }
             }
             // This check only for Flat Shipping Rate Rule.
@@ -1036,25 +1034,31 @@ class GetRatesController extends Controller
             $this->formatReq['lineItemData']['items'] = $products;
         }
 
-        $shippingRuleController = new ShippingRuleController();
-        $isRuletrue = $shippingRuleController->checkIsSurchargeRuleApply($rule, $this->formatReq['lineItemData']['items'], null, null, $this->formatReq['lineItemData']['destination'], null, $this->formatReq, null, $addressStatus);
-        $isRuleApplied = false;
-        if (!$isRuletrue['istrue']) {
-            foreach ($isRuletrue['products'] as $key => $product) {                // check to assign cheapest flat rate rule
-                $flatRate = isset($this->formatReq['lineItemData']['items'][$key]['flatRate']) ? $this->formatReq['lineItemData']['items'][$key]['flatRate'] : null;
-                if ($rule['filter_flat_shipping_rate'] <= $flatRate) {
+        $locationIds = array_unique(
+            array_column($this->formatReq['lineItemData']['origin'], 'locationId')
+        );
 
-                    $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
-                    $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
-                    $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
-                    $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
-                    $isRuleApplied = true;
-                } elseif ($flatRate === null) {
-                    $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
-                    $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
-                    $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
-                    $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
-                    $isRuleApplied = true;
+        foreach ($locationIds as $locationId) {
+            $shippingRuleController = new ShippingRuleController();
+            $isRuletrue = $shippingRuleController->checkIsSurchargeRuleApply($rule, $this->formatReq['lineItemData']['items'], $locationId, $this->formatReq['lineItemData']['origin'], $this->formatReq['lineItemData']['destination'], null, $this->formatReq, null, $addressStatus);
+            $isRuleApplied = false;
+            if (!$isRuletrue['istrue']) {
+                foreach ($isRuletrue['products'] as $key => $product) {                // check to assign cheapest flat rate rule
+                    $flatRate = isset($this->formatReq['lineItemData']['items'][$key]['flatRate']) ? $this->formatReq['lineItemData']['items'][$key]['flatRate'] : null;
+                    if ($rule['filter_flat_shipping_rate'] <= $flatRate) {
+
+                        $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                        $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                        $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                        $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+                        $isRuleApplied = true;
+                    } elseif ($flatRate === null) {
+                        $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                        $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                        $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                        $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+                        $isRuleApplied = true;
+                    }
                 }
             }
         }
@@ -1080,6 +1084,7 @@ class GetRatesController extends Controller
 
     public function applyRestrictOriginLocationsRule($storeId, $formatReq)
     {
+        // dd($formatReq);
         $shippingRules = ShippingRule::getStoreShippingRules($storeId, self::RESTRICT_ORIGIN_LOCATION);
         $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
         $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
