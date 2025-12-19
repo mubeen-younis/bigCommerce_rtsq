@@ -628,7 +628,6 @@ class ShippingRuleController extends Controller
         } else {
             $brandsResultCheck = true;
         }
-
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
             $productsResult = $productsResult['istrue'];
@@ -1050,7 +1049,6 @@ class ShippingRuleController extends Controller
             }
         }
 
-
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -1424,7 +1422,7 @@ class ShippingRuleController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach ($restrictedBrands as $rpKey => $brandId) {
 
-                $filterBrands = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
+                $filterBrands[] = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
             }
             if (!empty($filterBrands)) {
                 return [
@@ -1461,7 +1459,7 @@ class ShippingRuleController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach ($restrictedProducts as $rpKey => $productId) {
 
-                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
+                $filterProducts[] = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
             }
             if (!empty($filterProducts)) {
                 return [

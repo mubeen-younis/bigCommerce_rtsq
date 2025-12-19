@@ -129,7 +129,6 @@ class GetRatesController extends Controller
         if ($this->isRestrictionShippingRulesApplied($storeData, $this->formatReq, $addressStatus)) {
             return [];
         }
-
         // Apply Nesting items functionality
         if (!empty($this->formatReq['lineItemData']['items'])) {
             $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
@@ -764,7 +763,6 @@ class GetRatesController extends Controller
 
 
         $this->applyRestrictOriginLocationsRule($storeId, $formatReq);
-
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
         if (!empty($shippingRules)) {
 
@@ -823,7 +821,7 @@ class GetRatesController extends Controller
                             if ($key == $provider) {
                                 $shippingRules = new ShippingRuleController();
                                 $isRuleTrue = $shippingRules->hideMethods($rule, $items, $destination, $formatReq, $storeData, $addressStatus);
-                                if ($isRuleTrue === false) {
+                               if ($isRuleTrue === false) {
                                     return false;
                                 } else {
                                     unset($this->connectionSettings[$key]);
@@ -1113,8 +1111,8 @@ class GetRatesController extends Controller
                         // PRODUCT FILTER
                         if ($isFilterProduct && !empty($item['product_id'])) {
                             $isProductExist = collect($rule['products'])
-                                ->where('value', $item['product_id'])
-                                ->isNotEmpty();
+                            ->where('value', $item['product_id'])
+                            ->isNotEmpty();
                             if ($isProductExist) {
                                 $matchedFilters++;
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
@@ -1167,6 +1165,51 @@ class GetRatesController extends Controller
                         }
                     }
                 }
+
+                 if (!empty($warehouses)) {
+
+                    $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
+                    foreach ($origins as $key => $origin) {
+                        if ($key == $item['variant_id'] && isset($origin['location']) && $origin['location'] === 'warehouse') {
+                            // check: if multiple warehouses defined then find nearest origin from the warehouses list
+                            $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                            if (blank($originAddress)) {
+                                Log::info('No warehouse added');
+                                return false;
+                            }
+                            $originAddress = $this->getAddressForQuotes($originAddress);
+                            // Check: if origin already assign then skip the origin assignment
+                            if ($originAddress['senderZip'] == $this->formatReq['lineItemData']['origin'][$key]['senderZip']) {
+                                continue;
+                            }
+                            $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                        }
+                    }
+                }
+
+                //  if (!empty($warehouses) && isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])) {
+
+                //     $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
+                //     foreach ($origins as $key => $origin) {
+                //         if ($key == $item['variant_id'] && isset($origin['location']) && $origin['location'] === 'warehouse') {
+                //             // check: if multiple warehouses defined then find nearest origin from the warehouses list
+                //             $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                //             if (blank($originAddress)) {
+                //                 Log::info('No warehouse added');
+                //                 return false;
+                //             }
+                //             $originAddress = $this->getAddressForQuotes($originAddress);
+                //             // Check: if origin already assign then skip the origin assignment
+                //             if ($originAddress['senderZip'] == $this->formatReq['lineItemData']['origin'][$key]['senderZip']) {
+                //                 continue;
+                //             }
+                //             $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                //         }
+                //     }
+                // }
+
+                
+
             }
         }
     }
