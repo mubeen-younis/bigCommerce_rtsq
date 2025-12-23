@@ -61,7 +61,7 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false, $addressStatus)
+    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false, $addressStatus, $initialLineItemData)
     {
         $quoteSettings = $multiShipmentQuotes = [];
         $destination = $request['lineItemData']['destination'];
@@ -125,6 +125,9 @@ class Shipping
 
             if (blank($itemsWithoutFreeShipping)) {
                 $finalResp = $this->formattedFlatRateRuleResponse($finalQuotes);
+                // dd("request", $request);
+                $request = $initialLineItemData;
+                // dd("request", $request, $finalResp);
                 $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
                 return $finalResp['formattedResp'];
             }

@@ -113,6 +113,7 @@ class GetRatesController extends Controller
                 return [];
             }
         }
+        $initialLineItemData['lineItemData'] = $this->formatReq['lineItemData'] ?? [];
         $destination = $this->formatReq['lineItemData']['destination'] ?? [];
         $generateRequestData = new GenerateRequestData();
         $addressStatus = $generateRequestData->checkAddressStatusForShippingRule($storeData['store']['id'], $destination);
@@ -133,7 +134,7 @@ class GetRatesController extends Controller
             $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
         }
 
-        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled, $addressStatus);
+        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled, $addressStatus, $initialLineItemData);
 
         return $quotes;
     }
