@@ -1096,8 +1096,8 @@ class ShippingRuleController extends Controller
 
         $isLocationFilter = isset($settings['isLocationFilter']) ? $settings['isLocationFilter'] : false;
         // $isLocationFilter = $settings['isLocationFilter'];
-        if ($isLocationFilter && !empty($filterCountry)) {
-            if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
+        if ($isLocationFilter && (!empty($filterCountry) || !empty($postalCodes))) {
+            if (($isSameCountry && empty($statesCode)) || ($isSameCountry && $isSameState && empty($postalCodes)) || ($isSameCountry && $isSameState && $isSamePostalCode) || !empty($postalCodes) && $isSamePostalCode && empty($filterCountry) && empty($stateProvince)) {
                 $isSameLocation = true;
             } else {
                 $isSameLocation = 2;
