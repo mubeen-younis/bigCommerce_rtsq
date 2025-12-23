@@ -104,7 +104,6 @@ class GetRatesController extends Controller
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $this->formatReq = $this->formatRequest($request->all(), $storeData);
-// dd("formatReq", $this->formatReq);
         if (
             $this->formatReq['lineItemData']['destination']['zip'] == null ||
             $this->formatReq['lineItemData']['destination']['country'] == null ||
@@ -416,7 +415,6 @@ class GetRatesController extends Controller
         }
         if ($wareHouseShipmentExist) {
             $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings, []);
-            // dd('originAddress', $originAddress);
             if (blank($originAddress)) {
                 Log::info('No warehouse added');
                 return null;
@@ -821,7 +819,7 @@ class GetRatesController extends Controller
                             if ($key == $provider) {
                                 $shippingRules = new ShippingRuleController();
                                 $isRuleTrue = $shippingRules->hideMethods($rule, $items, $destination, $formatReq, $storeData, $addressStatus);
-                               if ($isRuleTrue === false) {
+                                if ($isRuleTrue === false) {
                                     return false;
                                 } else {
                                     unset($this->connectionSettings[$key]);
@@ -1006,14 +1004,27 @@ class GetRatesController extends Controller
         });
         // When no filter applied and single shipment case
         if (
-            $areAllOriginsSame === true &&
-            $isFilterWeight === false &&
-            $isFilterPrice === false &&
-            $isFilterQuantity === false &&
-            $isFilterCategory === false &&
-            $isFilterBrand === false &&
-            $isFilterProduct === false &&
-            $isLocationFilter === false
+            (
+                $areAllOriginsSame === true &&
+                $isFilterWeight === false &&
+                $isFilterPrice === false &&
+                $isFilterQuantity === false &&
+                $isFilterCategory === false &&
+                $isFilterBrand === false &&
+                $isFilterProduct === false &&
+                $isLocationFilter === false
+            )
+            ||
+            (
+                $areAllOriginsSame === true &&
+                ($isFilterWeight === true ||
+                    $isFilterPrice === true ||
+                    $isFilterQuantity === true ||
+                    $isFilterCategory === true ||
+                    $isFilterBrand === true ||
+                    $isFilterProduct === true ||
+                    $isLocationFilter === true)
+            )
 
         ) {
             $firstOriginKey = array_key_first($this->formatReq['lineItemData']['origin']);
@@ -1029,12 +1040,27 @@ class GetRatesController extends Controller
             $products = [];
             $products[$firstKey] = $this->formatReq['lineItemData']['items'][$firstKey];
 
+            $totalPieces = collect($this->formatReq['lineItemData']['items'])
+                ->sum('piecesOfLineItem');
+
             $this->formatReq['lineItemData']['items'] = $products;
+            $this->formatReq['lineItemData']['items'][$firstKey]['piecesOfLineItem'] = $totalPieces;
         }
 
         $locationIds = array_unique(
             array_column($this->formatReq['lineItemData']['origin'], 'locationId')
         );
+
+        $index = 0;
+
+        foreach ($this->formatReq['lineItemData']['items'] as $itemKey => &$item) {
+            if (isset($locationIds[$index])) {
+                $item['locationId'] = $locationIds[$index];
+            }
+            $index++;
+        }
+
+        unset($item); // important when using reference
 
         foreach ($locationIds as $locationId) {
             $shippingRuleController = new ShippingRuleController();
@@ -1082,7 +1108,6 @@ class GetRatesController extends Controller
 
     public function applyRestrictOriginLocationsRule($storeId, $formatReq)
     {
-        // dd($formatReq);
         $shippingRules = ShippingRule::getStoreShippingRules($storeId, self::RESTRICT_ORIGIN_LOCATION);
         $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
         $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
@@ -1111,8 +1136,8 @@ class GetRatesController extends Controller
                         // PRODUCT FILTER
                         if ($isFilterProduct && !empty($item['product_id'])) {
                             $isProductExist = collect($rule['products'])
-                            ->where('value', $item['product_id'])
-                            ->isNotEmpty();
+                                ->where('value', $item['product_id'])
+                                ->isNotEmpty();
                             if ($isProductExist) {
                                 $matchedFilters++;
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
@@ -1166,7 +1191,7 @@ class GetRatesController extends Controller
                     }
                 }
 
-                 if (!empty($warehouses)) {
+                if (!empty($warehouses)) {
 
                     $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
                     foreach ($origins as $key => $origin) {
@@ -1208,7 +1233,7 @@ class GetRatesController extends Controller
                 //     }
                 // }
 
-                
+
 
             }
         }

@@ -999,6 +999,17 @@ class ShippingRuleController extends Controller
     {
         $origins = isset($formData['lineItemData']['origin']) ? $formData['lineItemData']['origin'] : [];
         $cartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
+
+        if ($shippingRule['rule_type'] == self::FLAT_RATE) {
+            $cartItems = [];
+            $allCartItems = isset($formData['lineItemData']['items']) ? $formData['lineItemData']['items'] : [];
+            foreach ($allCartItems as $key => $item) {
+                if (isset($item['locationId']) && $item['locationId'] == $shipmentKey) {
+                    $cartItems[$key] = $item;
+                }
+            }
+        }
+
         $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
 
         $settings = json_decode($shippingRule['filter_settings'], true);
@@ -1029,13 +1040,12 @@ class ShippingRuleController extends Controller
         $products = [];
 
 
-         // --- Collect variants for this shipment key ---
+        // --- Collect variants for this shipment key ---
         if (!empty($allOrigins)) {
             $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
                 return $origin['locationId'] == $shipmentKey;
             })->keys()->all() ?? [];
         }
-// dd("variants", $variants, $allOrigins, $shipmentKey);
         // --- Totals ---
         if (!empty($variants)) {
             foreach ($variants as $variantId) {
@@ -1048,7 +1058,6 @@ class ShippingRuleController extends Controller
                 }
             }
         }
-
         if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -1076,8 +1085,6 @@ class ShippingRuleController extends Controller
             $isFilterPriceCheck = true;
         }
         if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-            // $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
-            // dd('totalQuantity',$totalQuantity,$shippingRule['quantity_from']);
             if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
                 $isFilterQuantity = true;
             } else {
@@ -1120,7 +1127,6 @@ class ShippingRuleController extends Controller
         } else {
             $brandsResultCheck = true;
         }
-
         if ($isFilterProduct === true) {
             $productsResult = $this->applyRuleOnProducts($shippingRule, $cartItems, $origins, $destination, $statesProvinces);
             $products = $productsResult['filterProducts'];
@@ -1131,7 +1137,6 @@ class ShippingRuleController extends Controller
         } else {
             $productsResultCheck = true;
         }
-
         // Is Address Type Filter
         if ($isAddressType === true) {
             if (($addressStatus == 'c' && $selectedAddressType == 1) || ($addressStatus == 'r' && $selectedAddressType == 2) || $selectedAddressType == 0) {
@@ -1159,7 +1164,13 @@ class ShippingRuleController extends Controller
             || $productsResult === true || $addressTypeResult === true) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck && $isSameLocationCheck
             && $categoriesResultCheck && $brandsResultCheck && $productsResultCheck && $addressTypeResultCheck)) {
             if ($shippingRule['rule_type'] == self::FLAT_RATE) {
-                $products = $items;
+                $products = [];
+                foreach ($items as $key => $item) {
+                    if (isset($item['locationId']) && $item['locationId'] == $shipmentKey) {
+                        $products[$key] = $item;
+                    }
+                }
+                // $products = $items;
             }
             return [
                 'istrue' => false,
@@ -1420,10 +1431,17 @@ class ShippingRuleController extends Controller
         $istrue = false;
         if (!empty($restrictedBrands)) {
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-            foreach ($restrictedBrands as $rpKey => $brandId) {
 
-                $filterBrands[] = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
+            foreach ($restrictedBrands as $brandId) {
+                $matched = collect($cartItems)
+                    ->where('brand_id', $brandId)
+                    ->all() ?? [];
+
+                if (!empty($matched)) {
+                    $filterBrands[] = $matched;
+                }
             }
+
             if (!empty($filterBrands)) {
                 return [
                     'istrue' => true,
@@ -1457,11 +1475,20 @@ class ShippingRuleController extends Controller
 
         if (!empty($restrictedProducts)) {
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-            foreach ($restrictedProducts as $rpKey => $productId) {
+            $filterProducts = [];
 
-                $filterProducts[] = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
+            foreach ($restrictedProducts as $productId) {
+                $matched = collect($cartItems)
+                    ->where('product_id', $productId['key'])
+                    ->all();
+
+                if (!empty($matched)) {
+                    $filterProducts[] = $matched;
+                }
             }
+
             if (!empty($filterProducts)) {
+
                 return [
                     'istrue' => true,
                     'filterProducts' => $filterProducts,
