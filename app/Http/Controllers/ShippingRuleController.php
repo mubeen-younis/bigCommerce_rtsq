@@ -130,7 +130,7 @@ class ShippingRuleController extends Controller
                     $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
                     $ruleSettings = json_decode($rule['filter_settings'], true);
                     $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
-                    $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+                    $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
                     $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
                     $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
                     $isSameCountry = $destination['country'] == $filterCountry ?? false;
@@ -419,7 +419,7 @@ class ShippingRuleController extends Controller
         $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
         $settings = json_decode($rule['filter_settings'], true);
         $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
-        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
         $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
@@ -545,9 +545,9 @@ class ShippingRuleController extends Controller
         $settings = json_decode($shippingRule['filter_settings'], true);
         $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? $settings['is_all_filter_applied'] : '';
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
-        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-        $postalCodes = isset($shippingRule['filter_postal_code']) ? $shippingRule['filter_postal_code'] : '';
+        $postalCodes = isset($shippingRule['filter_postal_code']) ? $shippingRule['filter_postal_code'] : [];
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
         $isFilterBrand = isset($settings['isFilterBrand']) ? $settings['isFilterBrand'] : false;
@@ -680,7 +680,7 @@ class ShippingRuleController extends Controller
         $isFilterMaxShippingRate = $settings['isFilterMaxShippingRate'];
         $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? $settings['is_all_filter_applied'] : '';
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
-        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
 
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
@@ -733,7 +733,6 @@ class ShippingRuleController extends Controller
         } else {
             $isFilterQuantityCheck = true;
         }
-
         $isLocationFilter = $settings['isLocationFilter'];
         if ($isLocationFilter && !empty($filterCountry)) {
             if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
@@ -838,7 +837,7 @@ class ShippingRuleController extends Controller
         $isAllFilterApplied = isset($settings['is_all_filter_applied']) ? $settings['is_all_filter_applied'] : '';
         $isFilterMaxShippingRate = $settings['isFilterMaxShippingRate'];
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
-        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
 
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
@@ -1024,7 +1023,7 @@ class ShippingRuleController extends Controller
 
         $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
         $stateProvince = (isset($settings['filter_state_province']) && !empty($settings['filter_state_province'])) ? $settings['filter_state_province'] : [];
-        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+        $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : [];
         $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
 
         $isFilterCategory = isset($settings['isFilterCategory']) ? $settings['isFilterCategory'] : false;
@@ -1514,8 +1513,8 @@ class ShippingRuleController extends Controller
      */
     public function checkRuleRestriction($rule, $origins, $destination, $statesCode, $products, &$formatReq = null, &$connectionSettings = null)
     {
-        $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
-        $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
+        $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : [];
+        $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : [];
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
         $ruleType = !empty($rule['rule_type']) ? (int)$rule['rule_type'] : null;
