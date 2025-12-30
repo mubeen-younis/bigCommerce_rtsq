@@ -707,8 +707,8 @@ class ShippingRule extends Model
         $shippingRule['products'] = $settings['filter_products'] ?? [];
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
-        $shippingRule['filter_country'] = $settings['filter_country'];
-        $shippingRule['filter_state_province'] = $settings['filter_state_province'];
+        $shippingRule['filter_country'] = $settings['filter_country'] ?? [];
+        $shippingRule['filter_state_province'] = $settings['filter_state_province'] ?? [];
         $shippingRule['filter_flat_shipping_rate'] = $settings['filter_flat_shipping_rate'] ?? '';
         $shippingRule['isFilterFlatPrice'] = $settings['isFilterFlatPrice'] ?? false;
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
