@@ -189,6 +189,9 @@ class ShippingRuleController extends Controller
                             default:
                                 break;
                         }
+                        Log::info('ovovooooo check if override filters are working isRuletrue' . json_encode([
+                            $isRuletrue
+                        ]));
                         if (!$isRuletrue) {
                             if ($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
@@ -203,20 +206,17 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = str_replace('2 Day Am', '2 Day AM', $serviceDesc);
                                 if (in_array($serviceDesc, (array) $rule['filter_services'])) {
 
-                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                        $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
-                                        $quote['shipping_amount']['amount'] = $rule['service_rates'];
-                                        $isOverrideRates = true;
-
-
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                    $quote['shipping_amount']['amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
                                 } else if ($providerSlug == 'unishippers-small') {
                                     $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
                                     if (in_array($serviceTitle, (array) $rule['filter_services'])) {
 
-                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                            $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
-                                            $isOverrideRates = true;
-  
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
                                     }
                                 } else if ($providerSlug == 'purolator-small') {
                                     $serviceDesc = preg_replace('/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])|(?<=[a-z])(?=[A-Z])/', ' ', $quote['serviceType']);
@@ -227,23 +227,28 @@ class ShippingRuleController extends Controller
 
                                     if (in_array($serviceDesc, (array) $rule['filter_services'])) {
 
-                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                            $isOverrideRates = true;
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
                                     }
                                 } else if ($providerSlug == 'usps-small') {
                                     $serviceType = 'USPS ' . $quote['serviceType'];
                                     $filterServices = str_replace('*', '', $rule['filter_services']);
                                     if (in_array($serviceType, (array) $filterServices)) {
 
-                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                            $isOverrideRates = true;
-
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
                                     }
                                 }
+                                Log::info('ovovooooo check for small carriers isOverrideRates' . json_encode([
+                                    $isOverrideRates
+                                ]));
                             } else if ($carrierType == 1) {
                                 // Update LTL carriers WS rate with override rate shipping rule
                                 $quote = $this->overrideAccessorialsfee($quote, $rule, $destination, $maxShippingRateFilter);
                                 $isOverrideRates = true;
+                                Log::info('ovovooooooo to check LTL carriers isOverrideRates' . json_encode([
+                                    $isOverrideRates
+                                ]));
                             }
                         }
                     }
@@ -426,21 +431,6 @@ class ShippingRuleController extends Controller
             }
         }
 
-        // Determine if location conditions are met
-        // $shouldApplyRule = false;
-        // if ($hasLocationFilter) {
-        //     if (!empty($stateProvince)) {
-        //         // Country + State filter
-        //         $shouldApplyRule = ($isSameCountry && $isSameState);
-        //     } else {
-        //         // Only Country filter
-        //         $shouldApplyRule = $isSameCountry;
-        //     }
-        // } else {
-        //     // No location filter
-        //     $shouldApplyRule = (!$isSameCountry || (!$isSameState && !$isSameCountry));
-        // }
-
         // Only proceed if location conditions are met
         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0) {
 
@@ -458,7 +448,9 @@ class ShippingRuleController extends Controller
                     $totalAccessorialCharges += (float)$rule['service_rates'];
                 }
             }
-
+        Log::info('ovovooooo accessorial fee totalAccessorialCharges' . json_encode([
+            $totalAccessorialCharges
+        ]));
             // Handle the base transportation service if selected
             if (in_array('transportation', $filterServices)) {
                 // Set base transportation charge to service_rates
