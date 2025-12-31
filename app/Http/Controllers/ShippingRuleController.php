@@ -182,7 +182,7 @@ class ShippingRuleController extends Controller
                     $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
-                    if ($rule['rule_type'] == 6 && $carrierName == $carrIndexName) {
+                    if ($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName) {
                         switch ($rule['apply_to']) {
                             case 0: //Apply Shipments level
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination, $maxShippingRateFilter, $quote, $formData, $storeData, $addressStatus);
