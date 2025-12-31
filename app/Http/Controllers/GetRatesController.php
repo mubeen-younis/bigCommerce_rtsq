@@ -70,6 +70,7 @@ class GetRatesController extends Controller
      * returnRates will use to parse request
      */
 
+
     public function returnRates(Request $request, $count = null)
     {
         Log::info('Request ' . json_encode($request->all()));
