@@ -138,6 +138,13 @@ class ShippingRuleController extends Controller
 
                     $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
+                    Log::info('ovovooooo check carrier ID carrierId' . json_encode([
+                        $carrierId
+                    ]));
+
+                    Log::info('ovovooooo check connectionSettings' . json_encode([
+                        $connectionSettings
+                    ]));
                     $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
                         ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
                         ->select(
@@ -189,8 +196,11 @@ class ShippingRuleController extends Controller
                             default:
                                 break;
                         }
-                        Log::info('ovovooooo check if override filters are working isRuletrue' . json_encode([
-                            $isRuletrue
+                        Log::info('ovovooooo check carrier type' . json_encode([
+                            $carrierType
+                        ]));
+                        Log::info('ovovooooo check for small carriers isOverrideRates' . json_encode([
+                            $isOverrideRates
                         ]));
                         if (!$isRuletrue) {
                             if ($carrierType == 2) {
@@ -448,9 +458,9 @@ class ShippingRuleController extends Controller
                     $totalAccessorialCharges += (float)$rule['service_rates'];
                 }
             }
-        Log::info('ovovooooo accessorial fee totalAccessorialCharges' . json_encode([
-            $totalAccessorialCharges
-        ]));
+            Log::info('ovovooooo accessorial fee totalAccessorialCharges' . json_encode([
+                $totalAccessorialCharges
+            ]));
             // Handle the base transportation service if selected
             if (in_array('transportation', $filterServices)) {
                 // Set base transportation charge to service_rates
