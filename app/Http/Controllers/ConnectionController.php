@@ -294,8 +294,8 @@ class ConnectionController extends Controller
                     'nickname'   => $request->nickname,
                     'is_enabled' => $isEnabled,
                 ]);
-
                 $con = Connection::firstOrNew(['installed_carrier_id' => $carrier->id]);
+                $request['installed_carrier_id'] = $carrier->id; 
                 $con->value = json_encode($request->all());
                 $con->installed_carrier_id = $carrier->id;
                 $con->save();
@@ -496,6 +496,7 @@ class ConnectionController extends Controller
             }
 
             $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
+            $request['installed_carrier_id'] = $request->carrierId; 
             $con->value = json_encode($request->all());
             $con->installed_carrier_id = $request->carrierId;
             $con->save();
