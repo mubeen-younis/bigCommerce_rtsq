@@ -190,7 +190,6 @@ class ShippingRuleController extends Controller
                             default:
                                 break;
                         }
-
                         if (!$isRuletrue) {
                             if ($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
@@ -206,21 +205,21 @@ class ShippingRuleController extends Controller
 
                                 if (in_array($serviceDesc, (array) $rule['filter_services'])) {
 
-                                    if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
+                                    // if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
                                         $quote['shipping_amount']['amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
-                                    }
+                                    // }
 
-                                    if (!$hasLocationFilter) {
-                                        if (!$isSameCountry || !$isSameCountry && !$isSameState) {
-                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                            $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
-                                            $quote['shipping_amount']['amount'] = $rule['service_rates'];
-                                            $isOverrideRates = true;
-                                        }
-                                    }
+                                    // if (!$hasLocationFilter) {
+                                    //     if (!$isSameCountry || !$isSameCountry && !$isSameState) {
+                                    //         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    //         $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                    //         $quote['shipping_amount']['amount'] = $rule['service_rates'];
+                                    //         $isOverrideRates = true;
+                                    //     }
+                                    // }
                                 } else if ($providerSlug == 'unishippers-small') {
                                     $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
                                     if (in_array($serviceTitle, (array) $rule['filter_services'])) {
