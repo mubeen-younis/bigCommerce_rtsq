@@ -220,6 +220,7 @@ class ShippingRuleController extends Controller
                                     //         $isOverrideRates = true;
                                     //     }
                                     // }
+                                    
                                 } else if ($providerSlug == 'unishippers-small') {
                                     $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
                                     if (in_array($serviceTitle, (array) $rule['filter_services'])) {
